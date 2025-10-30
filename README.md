@@ -1,0 +1,2 @@
+# Nitty-Grittys
+Trading Journal
