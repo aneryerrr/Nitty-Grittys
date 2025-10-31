@@ -3,11 +3,15 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Nitty Gritty</title>
+  <title>Nitty Gritty – Trading Journal</title>
 
-  <!-- Your Google client ID (kept both places for convenience) -->
+  <!-- Google Identity Services (your client id) -->
   <meta name="google-signin-client_id"
         content="579461879935-qaj9nta2pfbrn17ss5idu2k39p4joir4.apps.googleusercontent.com" />
+  <script>
+    window.NG_GOOGLE_CLIENT_ID =
+      "579461879935-qaj9nta2pfbrn17ss5idu2k39p4joir4.apps.googleusercontent.com";
+  </script>
 
   <link rel="icon" href="logo-ng.png" />
   <link rel="stylesheet" href="style.css" />
@@ -15,23 +19,18 @@
   <!-- Tailwind (CDN) -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- React + ReactDOM + Babel (for JSX in script.js) -->
+  <!-- React + ReactDOM + Babel (for JSX) -->
   <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <!-- Google Identity Services (popup button) -->
+  <!-- Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-
-  <script>
-    window.NG_GOOGLE_CLIENT_ID =
-      "579461879935-qaj9nta2pfbrn17ss5idu2k39p4joir4.apps.googleusercontent.com";
-  </script>
 </head>
 <body class="bg-slate-950 text-slate-100">
   <div id="root"></div>
 
-  <!-- Our app -->
+  <!-- App -->
   <script type="text/babel" src="script.js"></script>
 </body>
 </html>
