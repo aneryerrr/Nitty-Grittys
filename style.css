@@ -1,75 +1,100 @@
-/* Nitty Gritty custom tweaks */
-
+/* ===== Brand & layout ===== */
 :root {
-  --panel-w: 18rem; /* 72 in Tailwind scale */
+  --panel-w: 18rem; /* sidebar width */
 }
 
-/* Top-right user menu on wide screens */
-.ng-topbar {
-  position: sticky;
-  top: 0;
-  z-index: 30;
-  background: rgba(2,6,23,0.6);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid #334155;
-}
-
-/* Sidebar (collapsible on demand) */
 .ng-shell {
   display: grid;
   grid-template-columns: var(--panel-w) 1fr;
   min-height: 100vh;
 }
 .ng-shell.sidebar-hidden {
-  grid-template-columns: 0 1fr;
+  grid-template-columns: 0 1fr; /* fully hide sidebar */
 }
-.ng-shell .ng-sidebar {
+.ng-sidebar {
   overflow: auto;
+  border-right: 1px solid #0f172a;
+  padding: 1rem;
+}
+.ng-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: rgba(2,6,23,0.65);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid #334155;
 }
 
-/* Smaller Year view boxes (to avoid scrolling) */
+/* Brand row */
+.ng-brand {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+.ng-brand .ng-name {
+  font-weight: 900;            /* bolder font */
+  letter-spacing: .2px;
+}
+.ng-pill {
+  font-size: .7rem;
+  padding: .15rem .45rem;
+  border-radius: .5rem;
+  background: #1d4ed8;
+  border: 1px solid #1e40af;
+  color: #e2e8f0;
+}
+
+/* Login page: quote separate from card */
+.ng-login-wrap {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 1.5rem;
+  width: min(1100px, 92vw);
+}
+.ng-login-quote {
+  align-self: center;
+  padding: 1.25rem 1rem;
+}
+.ng-login-card {
+  background: #0f172aCC;
+  border: 1px solid #334155;
+  border-radius: 1rem;
+  padding: 1.25rem;
+}
+@media (max-width: 900px) {
+  .ng-login-wrap { grid-template-columns: 1fr; }
+  .ng-login-quote { order: 2; text-align: center; }
+}
+
+/* Calendar compact styles */
 .ng-month-tile {
-  padding: 0.5rem;            /* p-2 */
-  border-radius: 0.75rem;      /* rounded-xl */
-  border: 1px solid #334155;   /* slate-700 */
-  background: rgba(15,23,42,.5); /* slate-900/50 */
+  padding: .45rem;
+  border-radius: .75rem;
+  border: 1px solid #334155;
+  background: rgba(15,23,42,.55);
 }
-.ng-month-title {
-  font-weight: 600;
-  margin-bottom: 0.25rem;
-  font-size: .9rem;
-}
+.ng-month-title { font-weight: 700; font-size: .85rem; margin-bottom: .25rem; }
 
-/* Add-Trade modal: wider, shorter content */
-.ng-modal .ng-modal-card {
-  max-width: 64rem;          /* ~ max-w-4xl */
-  max-height: 85vh;
-}
+/* Year/month grids: tight, no scroll */
+.ng-year-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+@media (max-width: 900px) { .ng-year-grid { grid-template-columns: repeat(2, 1fr); } }
+.ng-month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: .25rem; }
 
-/* BUY/SELL colors */
-.btn-buy {
-  border-color: #16a34a;
-}
-.btn-buy.active {
-  background-color: #16a34a;
-  border-color: #16a34a;
-}
-.btn-sell {
-  border-color: #dc2626;
-}
-.btn-sell.active {
-  background-color: #dc2626;
-  border-color: #dc2626;
-}
+/* Add-Trade modal: comfortably wide but not tall */
+.ng-modal .ng-card { max-width: 64rem; max-height: 85vh; }
 
-/* History table: allow denser cells on small screens */
+/* BUY/SELL button colors */
+.btn-buy { border-color:#16a34a; }
+.btn-buy.active { background:#16a34a; border-color:#16a34a; color:#fff; }
+.btn-sell { border-color:#dc2626; }
+.btn-sell.active { background:#dc2626; border-color:#dc2626; color:#fff; }
+
+/* Dense tables on smaller screens */
 @media (max-width: 1024px) {
-  .ng-table td, .ng-table th { padding: .5rem .75rem; }
+  .ng-table td, .ng-table th { padding: .5rem .65rem; }
 }
 
-/* Mobile: sidebar starts hidden to save space */
+/* On small screens, sidebar starts hidden */
 @media (max-width: 768px) {
-  .ng-shell {
-    grid-template-columns: 0 1fr;
-  }
+  .ng-shell { grid-template-columns: 0 1fr; }
 }
