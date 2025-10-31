@@ -255,7 +255,12 @@ function CalendarModal({onClose,trades,view,setView,month,setMonth,year,setYear,
 }
 
 function usePersisted(email){
-  const [state,setState]=useState(()=>{const s=loadState(email||getCurrent());return s||{name:"",email:email||"",accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[]}});
+  const fresh = () => ({name:"",email:email||"",accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[]});
+  const [state,setState]=useState(()=>{const s=loadState(email||getCurrent());return s||fresh()});
+  useEffect(()=>{
+    const loaded = loadState(email);
+    setState(loaded || fresh());
+  }, [email]);
   useEffect(()=>{if(!state||!state.email)return;saveState(state.email,state)},[state]);
   return [state,setState];
 }
@@ -400,18 +405,13 @@ function ResetModal({email,onClose,onReset}){
     const first_name = u.name.split(' ')[0];
     const reset_link = url;
     const expiry_time = "15 minutes";
-    const body = `Dear ${first_name},\n\nWe received a request to reset the password for your Trading Journal account. To proceed, please click the link below:\n\n${reset_link}\n\nThis link will expire in ${expiry_time}. If you did not request a reset, please ignore this email.\n\nRegards,\nNitty Gritty Support`;
-    // To directly send email, set up EmailJS and uncomment the following:
-    // const templateParams = { to_email: e, first_name, reset_link, expiry_time };
-    // try {
-    //   await emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams);
-    //   setMsg('Reset email sent successfully.');
-    // } catch (error) {
-    //   setMsg('Failed to send email: ' + error.text);
-    // }
-    // For now, using mailto:
-    window.open(`mailto:${encodeURIComponent(e)}?subject=${encodeURIComponent("Nitty Gritty Password Reset")}&body=${encodeURIComponent(body)}`,'_blank');
-    setMsg('Email composer opened. Please send the email to yourself.');
+    const templateParams = { to_email: e, first_name, reset_link, expiry_time };
+    try {
+      await emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams);
+      setMsg('Reset email sent successfully.');
+    } catch (error) {
+      setMsg('Failed to send email: ' + error.text);
+    }
   }
   return(<Modal title="Password reset" onClose={onClose} maxClass="max-w-md">
     <div className="space-y-3">
