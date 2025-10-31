@@ -3,17 +3,21 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Nitty Gritty – Trading Journal</title>
-  <link rel="stylesheet" href="./style.css" />
-  <!-- React -->
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <!-- Google Identity Services (kept so your Google Sign-In continues to work) -->
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <title>Nitty Gritty</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
+<body class="bg-slate-950 text-slate-100">
   <div id="root"></div>
-  <script type="text/babel" src="./script.js"></script>
+
+  <script>
+    window.GOOGLE_CLIENT_ID = "579461879935-qaj9nta2pfbrn17ss5idu2k39p4joir4.apps.googleusercontent.com";
+  </script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script type="text/babel" data-presets="env,react" src="./script.js"></script>
 </body>
 </html>
