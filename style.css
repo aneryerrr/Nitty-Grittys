@@ -1,6 +1,8 @@
-html, body, #root { height: 100%; }
-* { box-sizing: border-box; }
-button:disabled { opacity: 0.6; cursor: not-allowed; }
-::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-thumb { background: #334155; border-radius: 8px; }
-::-webkit-scrollbar-track { background: #0f172a; }
+html,body,#root{height:100%}
+.hero{
+  background-image: url('./hero.jpg'), radial-gradient(1200px 800px at 20% 20%, #1e3a8a 0%, #020617 60%);
+  background-size: cover;
+  background-position: center;
+}
+.scroll-smooth::-webkit-scrollbar{height:8px;width:8px}
+.scroll-smooth::-webkit-scrollbar-thumb{background:#334155;border-radius:8px}
