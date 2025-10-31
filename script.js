@@ -4,6 +4,7 @@ const iconCls="h-5 w-5";
 const IconUser=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Z"/><path d="M4 20a8 8 0 0 1 16 0Z"/></svg>);
 const IconLogout=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M9 21h4a4 4 0 0 0 4-4V7a4 4 0 0 0-4-4H9"/><path d="M16 12H3"/><path d="M7 8l-4 4 4 4"/></svg>);
 const IconDownload=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M12 3v10"/><path d="M8 11l4 4 4-4"/><path d="M5 21h14v-4H5Z"/></svg>);
+const IconUpload=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M12 11V1"/><path d="M16 5L12 1 8 5"/><path d="M5 23h14V13H5z"/></svg>);
 const IconCalendar=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M8 3v4M16 3v4"/><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/></svg>);
 const IconPlus=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M12 5v14M5 12h14"/></svg>);
 const IconHistory=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M12 8v5l3 3"/><path d="M12 3a9 9 0 1 0 9 9"/><path d="M21 3v6h-6"/></svg>);
@@ -172,6 +173,17 @@ function TradeModal({initial,onClose,onSave,onDelete,accType}){
   const [tp1,setTp1]=useState(i.tp1??""); const [tp2,setTp2]=useState(i.tp2??""); const [sl,setSl]=useState(i.sl??"");
   const [strategy,setStrategy]=useState(i.strategy||STRATEGIES[0]); const [exitType,setExitType]=useState(i.exitType||"TP");
   const num=v=>(v===""||v===undefined||v===null)?undefined:parseFloat(v);
+  const calculateTPs = () => {
+    const en = num(entry);
+    const sll = num(sl);
+    if (en === undefined || sll === undefined) return;
+    const risk = side === "BUY" ? en - sll : sll - en;
+    if (risk <= 0) return;
+    const tp1Calc = side === "BUY" ? en + risk : en - risk;
+    const tp2Calc = side === "BUY" ? en + risk * 2 : en - risk * 2;
+    setTp1(tp1Calc);
+    setTp2(tp2Calc);
+  };
   const draft=useMemo(()=>({id:i.id,date,symbol,side,lotSize:parseFloat(lotSize||0),entry:num(entry),exit:num(exit),tp1:num(tp1),tp2:num(tp2),sl:num(sl),strategy,exitType}),[i.id,date,symbol,side,lotSize,entry,exit,tp1,tp2,sl,strategy,exitType]);
   const preview=useMemo(()=>{const v=computeDollarPnL(draft,accType);if(v===null||!isFinite(v))return"-";return`${formatPnlDisplay(accType,v)} (${formatUnits(accType,v)})`},[draft,accType]);
   return(
@@ -186,6 +198,7 @@ function TradeModal({initial,onClose,onSave,onDelete,accType}){
         <div><label className="text-sm text-slate-300">TP 1</label><input type="number" step="0.0001" value={tp1} onChange={e=>setTp1(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
         <div><label className="text-sm text-slate-300">TP 2</label><input type="number" step="0.0001" value={tp2} onChange={e=>setTp2(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
         <div><label className="text-sm text-slate-300">Stop-Loss</label><input type="number" step="0.0001" value={sl} onChange={e=>setSl(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
+        <div className="flex items-end pb-2"><button onClick={calculateTPs} className="px-3 py-2 rounded-lg border border-blue-600 text-blue-300 hover:bg-blue-900/20">Calc TPs</button></div>
         <div><label className="text-sm text-slate-300">Strategy</label><select value={strategy} onChange={e=>setStrategy(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">{STRATEGIES.map(s=><option key={s}>{s}</option>)}</select></div>
         <div><label className="text-sm text-slate-300">Exit Type</label><select value={exitType} onChange={e=>setExitType(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">{EXIT_TYPES.map(s=><option key={s}>{s}</option>)}</select></div>
       </div>
@@ -265,13 +278,16 @@ function usePersisted(email){
   return [state,setState];
 }
 
-function UserMenu({onExport,onLogout}){
+function UserMenu({onExport,onLogout,onImport}){
   const [open,setOpen]=useState(false);
+  const fileInput = useRef(null);
   return(
     <div className="relative">
       <button onClick={()=>setOpen(v=>!v)} className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-700 hover:bg-slate-800"><IconUser/></button>
       {open&&(<div className="absolute right-0 mt-2 w-48 bg-slate-800 border border-slate-700 rounded-xl shadow-lg overflow-hidden">
         <button onClick={()=>{setOpen(false);onExport()}} className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-700"><IconDownload/>Export CSV</button>
+        <button onClick={()=>{setOpen(false);fileInput.current.click()}} className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-700"><IconUpload/>Import CSV</button>
+        <input type="file" accept=".csv" ref={fileInput} onChange={onImport} style={{display: 'none'}} />
         <button onClick={()=>{setOpen(false);onLogout()}} className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-700 text-red-300"><IconLogout/>Logout</button>
       </div>)}
     </div>
@@ -324,7 +340,7 @@ function Histories({trades,accType,onEdit,onDelete}){
   </div>)
 }
 
-function Header({logoSrc,onToggleSidebar,onExport,onLogout}){
+function Header({logoSrc,onToggleSidebar,onExport,onLogout,onImport}){
   return(<div className="sticky top-0 z-30 flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-950/70 backdrop-blur">
     <div className="flex items-center gap-3">
       <button onClick={onToggleSidebar} className="px-3 py-2 rounded-lg border border-slate-700 hover:bg-slate-800">☰</button>
@@ -334,13 +350,13 @@ function Header({logoSrc,onToggleSidebar,onExport,onLogout}){
         <span className="bg-blue-900 text-xs px-2 py-0.5 rounded-md">Trading Journal</span>
       </div>
     </div>
-    <UserMenu onExport={onExport} onLogout={onLogout}/>
+    <UserMenu onExport={onExport} onLogout={onLogout} onImport={onImport}/>
   </div>)
 }
 
-function AppShell({children,capitalPanel,nav,logoSrc,onToggleSidebar,onExport,onLogout,sidebarCollapsed}){
+function AppShell({children,capitalPanel,nav,logoSrc,onToggleSidebar,onExport,onLogout,onImport,sidebarCollapsed}){
   return(<div className="min-h-screen">
-    <Header logoSrc={logoSrc} onToggleSidebar={onToggleSidebar} onExport={onExport} onLogout={onLogout}/>
+    <Header logoSrc={logoSrc} onToggleSidebar={onToggleSidebar} onExport={onExport} onLogout={onLogout} onImport={onImport}/>
     <div className="flex">
       {!sidebarCollapsed&&(<div className="w-72 shrink-0 border-r border-slate-800 min-h-[calc(100vh-56px)] p-4 space-y-4">
         <div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4">{capitalPanel}</div>
@@ -461,6 +477,51 @@ function App(){
 
   const onExport=()=>{const csv=toCSV(state.trades,state.accType);const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="Nitty_Gritty_Template_Export.csv";a.click();URL.revokeObjectURL(url)};
 
+  const onImport = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      let text = ev.target.result;
+      if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1); // remove BOM
+      const lines = text.split(/\r?\n/);
+      if (lines.length < 1) return;
+      const headers = lines[0].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+      const newTrades = [];
+      for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+        const data = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+        const t = {};
+        headers.forEach((h, j) => {
+          let v = data[j];
+          if (v !== undefined) {
+            v = v.replace(/^"/, '').replace(/"$/, '').replace(/""/g, '"');
+            if (v === '') v = undefined;
+            else if (!isNaN(parseFloat(v))) v = parseFloat(v);
+          }
+          switch (h.trim()) {
+            case 'Date': t.date = v; break;
+            case 'Symbol': t.symbol = v; break;
+            case 'Side': t.side = v; break;
+            case 'Lot Size': t.lotSize = v; break;
+            case 'Entry': t.entry = v; break;
+            case 'Exit': t.exit = v; break;
+            case 'TP1': t.tp1 = v; break;
+            case 'TP2': t.tp2 = v; break;
+            case 'SL': t.sl = v; break;
+            case 'Strategy': t.strategy = v; break;
+            case 'Exit Type': t.exitType = v; break;
+          }
+        });
+        if (t.date && t.symbol) {
+          newTrades.push({ ...t, id: Math.random().toString(36).slice(2) });
+        }
+      }
+      setState({ ...state, trades: [...state.trades, ...newTrades] });
+    };
+    reader.readAsText(file);
+  };
+
   const onLogout=()=>{saveCurrent("");setCurrentEmail("")};
 
   const initGoogle=(container,onEmail)=>{
@@ -510,7 +571,7 @@ function App(){
 
   const logoSrc=LOGO_PUBLIC;
 
-  return(<AppShell capitalPanel={capitalPanel} nav={nav} logoSrc={logoSrc} onToggleSidebar={()=>setCollapsed(v=>!v)} onExport={onExport} onLogout={onLogout} sidebarCollapsed={collapsed}>
+  return(<AppShell capitalPanel={capitalPanel} nav={nav} logoSrc={logoSrc} onToggleSidebar={()=>setCollapsed(v=>!v)} onExport={onExport} onLogout={onLogout} onImport={onImport} sidebarCollapsed={collapsed}>
     {page==="dashboard"&&(<div className="space-y-4">
       <div className="text-sm font-semibold">General statistics</div>
       <GeneralStats trades={state.trades} accType={state.accType} capital={state.capital} depositDate={state.depositDate}/>
