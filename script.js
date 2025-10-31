@@ -13,7 +13,7 @@ const IconHome=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" 
 const LOGO_PUBLIC="/logo-ng.png"; const LOGO_FALLBACK="./logo-ng.png.png";
 const SYMBOLS=["XAUUSD","US100","US30","EURUSD","BTCUSD","AUDCAD","USDCAD","USDJPY","GBPUSD"];
 const STRATEGIES=["Trend Line Bounce","2 Touch Point Trend Line Break","3 / 3+ Touch Point Trend Line Break","Trend Line Break & Re-test","Trend Continuation"];
-const EXIT_TYPES=["TP","SL","TP1_BE","TP1_SL","BE"];
+const EXIT_TYPES=["TP","SL","TP1_BE","TP1_SL","BE","Trade In Progress"];
 const ACC_TYPES=["Cent Account","Dollar Account"];
 
 const r2=n=>Math.round(n*100)/100;
@@ -47,6 +47,7 @@ function legPnL(symbol,side,entry,exit,lot,accType){
   return raw*s;
 }
 function computeDollarPnL(t,accType){
+  if(t.exitType === "Trade In Progress") return null;
   if(typeof t.exit==="number"&&(!t.exitType||t.exitType==="TP")) return legPnL(t.symbol,t.side,t.entry,t.exit,t.lotSize,accType);
   const has=v=>typeof v==="number"&&isFinite(v);const{entry,sl,tp1,tp2,lotSize:lot}=t;
   switch(t.exitType){
@@ -174,8 +175,8 @@ function TradeModal({initial,onClose,onSave,onDelete,accType}){
   const draft=useMemo(()=>({id:i.id,date,symbol,side,lotSize:parseFloat(lotSize||0),entry:num(entry),exit:num(exit),tp1:num(tp1),tp2:num(tp2),sl:num(sl),strategy,exitType}),[i.id,date,symbol,side,lotSize,entry,exit,tp1,tp2,sl,strategy,exitType]);
   const preview=useMemo(()=>{const v=computeDollarPnL(draft,accType);if(v===null||!isFinite(v))return"-";return`${formatPnlDisplay(accType,v)} (${formatUnits(accType,v)})`},[draft,accType]);
   return(
-    <Modal title={i.id?"Edit Trade":"Add Trade"} onClose={onClose} maxClass="max-w-2xl">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+    <Modal title={i.id?"Edit Trade":"Add Trade"} onClose={onClose} maxClass="max-w-4xl">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
         <div><label className="text-sm text-slate-300">Symbol</label><select value={symbol} onChange={e=>setSymbol(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">{SYMBOLS.map(s=><option key={s}>{s}</option>)}</select></div>
         <div><label className="text-sm text-slate-300">Action</label><div className="mt-1 grid grid-cols-2 gap-2">{["BUY","SELL"].map(s=>(<button key={s} onClick={()=>setSide(s)} className={`px-2 py-2 rounded-lg border ${side===s ? (s==="BUY" ? "bg-green-600 border-green-500" : "bg-red-600 border-red-500") : "border-slate-700"}`}>{s}</button>))}</div></div>
         <div><label className="text-sm text-slate-300">Date</label><input type="date" value={date} onChange={e=>setDate(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
@@ -204,7 +205,7 @@ function CalendarModal({onClose,trades,view,setView,month,setMonth,year,setYear,
   const monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const dim=(y,m)=>new Date(y,m+1,0).getDate(); const fd=(y,m)=>new Date(y,m,1).getDay();
   const byDate=useMemo(()=>{const m={};for(const t of trades){m[t.date]=m[t.date]||[];m[t.date].push(t)}return m},[trades]);
-  const pnlByDate=useMemo(()=>{const m={};for(const date in byDate){const ts=byDate[date].filter(t=>t.exitType);const pnl=ts.reduce((a,t)=>a+ (computeDollarPnL(t,accType) || 0),0);m[date]=pnl}return m},[byDate,accType]);
+  const pnlByDate=useMemo(()=>{const m={};for(const date in byDate){const ts=byDate[date].filter(t=>t.exitType && t.exitType !== "Trade In Progress");const pnl=ts.reduce((a,t)=>a+ (computeDollarPnL(t,accType) || 0),0);m[date]=pnl}return m},[byDate,accType]);
   return(
     <Modal title="Calendar" onClose={onClose} maxClass="max-w-lg">
       <div className="flex items-center justify-between mb-3">
@@ -232,7 +233,8 @@ function CalendarModal({onClose,trades,view,setView,month,setMonth,year,setYear,
             {Array.from({length:dim(year,month)}).map((_,d)=>{const day=String(d+1).padStart(2,'0');const dateISO=`${year}-${String(month+1).padStart(2,'0')}-${day}`;const items=byDate[dateISO]||[];const pnl=pnlByDate[dateISO]||0;
               const colorClass=pnl>0 ? 'border-green-700/60 bg-green-900/10' : pnl<0 ? 'border-red-700/60 bg-red-900/10' : items.length ? 'border-blue-700/60 bg-blue-900/10' : 'border-slate-700 bg-slate-900/30';
               return(<button key={dateISO} onClick={()=>{setSelectedDate(dateISO);setView('day')}} className={`text-left p-1 rounded-lg border ${colorClass}`}>
-                <div className="text-xs text-slate-400">{d+1}</div>{items.slice(0,3).map(it=>(<div key={it.id} className="truncate text-xs">{it.symbol} {it.side}</div>))}
+                <div className="text-xs text-slate-400">{d+1}</div>
+                <div className={`text-xs ${pnl>0?'text-green-400':pnl<0?'text-red-400':'text-slate-400'}`}>{pnl!==0 ? formatPnlDisplay(accType,pnl) : ''}</div>
               </button>)})}
           </div>
         </div>
@@ -272,10 +274,10 @@ function UserMenu({onExport,onLogout}){
 }
 
 function GeneralStats({trades,accType,capital,depositDate}){
-  const realized=trades.filter(t=>new Date(t.date)>=new Date(depositDate)&&t.exitType);
+  const realized=trades.filter(t=>new Date(t.date)>=new Date(depositDate)&&t.exitType && t.exitType !== "Trade In Progress");
   const pnl=realized.map(t=>computeDollarPnL(t,accType)).filter(v=>v!==null&&isFinite(v));
   const total=pnl.reduce((a,b)=>a+b,0); const wins=pnl.filter(v=>v>0).length; const losses=pnl.filter(v=>v<0).length;
-  const open=trades.filter(t=>!t.exitType&&(t.exit===undefined||t.exit===null)).length; const wr=(wins+losses)>0?Math.round((wins/(wins+losses))*100):0;
+  const open=trades.filter(t=> !t.exitType || t.exitType === "Trade In Progress").length; const wr=(wins+losses)>0?Math.round((wins/(wins+losses))*100):0;
   return(<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
     <Stat label="Capital" value={accType==='Cent Account'?`${r2(capital*100).toFixed(2)} ¢`:fmt$(capital)}/>
     <Stat label="Realized P&L" value={formatPnlDisplay(accType,total)}/>
@@ -301,7 +303,7 @@ function Histories({trades,accType,onEdit,onDelete}){
     <div className="flex items-center justify-between mb-2"><div className="text-sm font-semibold">Trade History</div></div>
     <div className="overflow-auto"><table className="min-w-full text-sm">
       <thead><tr><Th>Date</Th><Th>Symbol</Th><Th>Side</Th><Th>Lot size</Th><Th>Entry</Th><Th>Exit</Th><Th>TP1</Th><Th>TP2</Th><Th>SL</Th><Th>Exit Type</Th><Th>P&L</Th><Th>P&L (Units)</Th><Th>Status</Th><Th>Actions</Th></tr></thead>
-      <tbody>{trades.map(t=>{const v=computeDollarPnL(t,accType);const closed=!!t.exitType;return(<tr key={t.id} className="border-t border-slate-700">
+      <tbody>{trades.map(t=>{const v=computeDollarPnL(t,accType);const closed= t.exitType && t.exitType !== "Trade In Progress";return(<tr key={t.id} className="border-t border-slate-700">
         <Td>{t.date}</Td><Td>{t.symbol}</Td><Td>{t.side}</Td><Td>{t.lotSize}</Td>
         <Td>{typeof t.entry==='number'?t.entry:''}</Td><Td>{typeof t.exit==='number'?t.exit:''}</Td>
         <Td>{typeof t.tp1==='number'?t.tp1:''}</Td><Td>{typeof t.tp2==='number'?t.tp2:''}</Td><Td>{typeof t.sl==='number'?t.sl:''}</Td>
@@ -362,7 +364,7 @@ function LoginView({onLogin,onSignup,initGoogle,resetStart}){
     <div className="flex items-center justify-center p-6">
       <div className="w-[92vw] max-w-md bg-slate-800 border border-slate-700 rounded-2xl p-6">
         <div className="flex items-center gap-3 mb-4">
-          <img src={LOGO_PUBLIC} onError={e=>{e.currentTarget.src=LOGO_FALLBACK}} className="h-8 w-8"/><div className="text-xl font-semibold">Nitty Gritty</div>
+          <img src={LOGO_PUBLIC} onError={e=>{e.currentTarget.src=LOGO_FALLBACK}} className="h-8 w-8"/><div className="text-xl font-bold">Nitty Gritty</div>
         </div>
         <div className="flex gap-2 mb-4">
           <button onClick={()=>setMode("login")} className={`flex-1 px-3 py-2 rounded-lg border ${mode==="login"?"bg-slate-700 border-slate-600":"border-slate-700"}`}>Login</button>
@@ -391,19 +393,31 @@ function LoginView({onLogin,onSignup,initGoogle,resetStart}){
 
 function parseJwt(token){try{return JSON.parse(atob(token.split('.')[1]))}catch{return null}}
 function ResetModal({email,onClose,onReset}){
-  const [e,setE]=useState(email||""); const [link,setLink]=useState("");
-  const start=()=>{const users=loadUsers();const u=users.find(x=>x.email.toLowerCase()===e.toLowerCase());if(!u){setLink("No account for that email.");return}
+  const [e,setE]=useState(email||""); const [link,setLink]=useState(""); const [msg,setMsg]=useState("");
+  const start=async ()=>{const users=loadUsers();const u=users.find(x=>x.email.toLowerCase()===e.toLowerCase());if(!u){setMsg("No account for that email.");return}
     const token=Math.random().toString(36).slice(2); const exp=Date.now()+1000*60*15; localStorage.setItem("ng_reset_"+token,JSON.stringify({email:e,exp}));
     const url=location.origin+location.pathname+"#reset="+token; setLink(url); 
     const first_name = u.name.split(' ')[0];
     const reset_link = url;
     const expiry_time = "15 minutes";
     const body = `Dear ${first_name},\n\nWe received a request to reset the password for your Trading Journal account. To proceed, please click the link below:\n\n${reset_link}\n\nThis link will expire in ${expiry_time}. If you did not request a reset, please ignore this email.\n\nRegards,\nNitty Gritty Support`;
-    window.open(`mailto:${encodeURIComponent(e)}?subject=${encodeURIComponent("Nitty Gritty Password Reset")}&body=${encodeURIComponent(body)}`,'_blank')}
+    // To directly send email, set up EmailJS and uncomment the following:
+    // const templateParams = { to_email: e, first_name, reset_link, expiry_time };
+    // try {
+    //   await emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams);
+    //   setMsg('Reset email sent successfully.');
+    // } catch (error) {
+    //   setMsg('Failed to send email: ' + error.text);
+    // }
+    // For now, using mailto:
+    window.open(`mailto:${encodeURIComponent(e)}?subject=${encodeURIComponent("Nitty Gritty Password Reset")}&body=${encodeURIComponent(body)}`,'_blank');
+    setMsg('Email composer opened. Please send the email to yourself.');
+  }
   return(<Modal title="Password reset" onClose={onClose} maxClass="max-w-md">
     <div className="space-y-3">
       <div><label className="text-sm text-slate-300">Your email</label><input value={e} onChange={ev=>setE(ev.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
       <button onClick={start} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500">Send reset link</button>
+      {msg&&<div className="text-sky-400 text-sm">{msg}</div>}
       {link&&<div className="text-xs break-all text-slate-300 mt-2">{link}</div>}
     </div>
   </Modal>)
@@ -439,9 +453,10 @@ function App(){
 
   useEffect(()=>{const hash=new URLSearchParams(location.hash.slice(1));const tok=hash.get("reset"); if(tok){setResetToken(tok)}},[]);
   useEffect(()=>{if(state&&(!state.name||!state.depositDate)) setShowAcct(true)},[state?.email]);
+  useEffect(()=>{if(typeof emailjs !== 'undefined'){emailjs.init({publicKey: "YOUR_EMAILJS_PUBLIC_KEY"});}},[]); // Initialize EmailJS
 
-  const openTrades=state.trades.filter(t=>!t.exitType&&(t.exit===undefined||t.exit===null)).length;
-  const realized=state.trades.filter(t=>new Date(t.date)>=new Date(state.depositDate)&&t.exitType).map(t=>computeDollarPnL(t,state.accType)).filter(v=>v!==null&&isFinite(v)).reduce((a,b)=>a+b,0);
+  const openTrades=state.trades.filter(t=> !t.exitType || t.exitType === "Trade In Progress").length;
+  const realized=state.trades.filter(t=>new Date(t.date)>=new Date(state.depositDate)&&t.exitType && t.exitType !== "Trade In Progress").map(t=>computeDollarPnL(t,state.accType)).filter(v=>v!==null&&isFinite(v)).reduce((a,b)=>a+b,0);
   const effectiveCapital=state.capital+realized;
 
   const onExport=()=>{const csv=toCSV(state.trades,state.accType);const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="Nitty_Gritty_Template_Export.csv";a.click();URL.revokeObjectURL(url)};
