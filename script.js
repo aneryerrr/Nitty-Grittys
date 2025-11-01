@@ -10,10 +10,11 @@ const IconPlus=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" 
 const IconHistory=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M12 8v5l3 3"/><path d="M12 3a9 9 0 1 0 9 9"/><path d="M21 3v6h-6"/></svg>);
 const IconSettings=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0  0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0  0 0-.4 1V22a2 2 0 1 1-4 0v-.1a1.65 1.65 0  0 0-.4-1 1.65 1.65 0  0 0-1-.6 1.65 1.65 0  0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0  0 0 4.6 15a1.65 1.65 0  0 0-.6-1 1.65 1.65 0  0 0-1-.4H2a2 2 0  1 1 0-4h.1a1.65 1.65 0  0 0 1-.4 1.65 1.65 0  0 0 .6-1 1.65 1.65 0  0 0-.33-1.82l-.06-.06A2 2 0  1 1 6.24 2.9l.06.06A1.65 1.65 0  0 0 8 4.6a1.65 1.65 0  0 0 1-.6 1.65 1.65 0  0 0 .4-1V2a2 2 0  1 1 4 0v.1c0 .38.14.74.4 1 .26.26.62.4 1 .4.62 0 1.22-.25 1.64-.68l.06-.06A2 2 0  1 1 21.1 6.24l-.06.06c-.26.26-.4.62-.4 1s.14.74.4 1c.26.26.62.4 1 .4H22a2 2 0  1 1 0 4h-.1a1.65 1.65 0  0 0-1 .4 1.65 1.65 0  0 0-.6 1Z"/></svg>);
 const IconHome=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9v12h14V9"/></svg>);
+const IconNotes=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h6"/></svg>);
 
 const LOGO_PUBLIC="/logo-ng.png"; const LOGO_FALLBACK="./logo-ng.png.png";
-const SYMBOLS=["XAUUSD","US100","US30","EURUSD","BTCUSD","AUDCAD","USDCAD","USDJPY","GBPUSD"];
-const STRATEGIES=["Trend Line Bounce","2 Touch Point Trend Line Break","3 / 3+ Touch Point Trend Line Break","Trend Line Break & Re-test","Trend Continuation"];
+const DEFAULT_SYMBOLS=["XAUUSD","US100","US30","EURUSD","BTCUSD","AUDCAD","USDCAD","USDJPY","GBPUSD"];
+const DEFAULT_STRATEGIES=["Trend Line Bounce","2 Touch Point Trend Line Break","3 / 3+ Touch Point Trend Line Break","Trend Line Break & Re-test","Trend Continuation"];
 const EXIT_TYPES=["TP","SL","TP1_BE","TP1_SL","BE","Trade In Progress"];
 const ACC_TYPES=["Cent Account","Dollar Account"];
 
@@ -96,7 +97,6 @@ function Modal({title,children,onClose,maxClass}){
 }
 
 function AccountSetupModal({name,setName,accType,setAccType,capital,setCapital,depositDate,setDepositDate,onClose,email}){
-  const [tab,setTab]=useState("personal");
   const [pw1,setPw1]=useState(""); const [pw2,setPw2]=useState(""); const [msg,setMsg]=useState("");
   const savePw=()=>{ if(!pw1||pw1.length<6){setMsg("Password must be at least 6 characters.");return}
     if(pw1!==pw2){setMsg("Passwords do not match.");return}
@@ -105,101 +105,100 @@ function AccountSetupModal({name,setName,accType,setAccType,capital,setCapital,d
   };
   return(
     <Modal title="Account Setup" onClose={onClose} maxClass="max-w-2xl">
-      <div className="flex gap-2 mb-4">
-        <button onClick={()=>setTab("personal")} className={`px-3 py-1.5 rounded-lg border ${tab==="personal"?"bg-slate-700 border-slate-600":"border-slate-700"}`}>Personal Info</button>
-        <button onClick={()=>setTab("security")} className={`px-3 py-1.5 rounded-lg border ${tab==="security"?"bg-slate-700 border-slate-600":"border-slate-700"}`}>Privacy & Security</button>
-      </div>
-      {tab==="personal"?(
-        <div className="space-y-4">
-          <div><label className="text-sm text-slate-300">Name</label><input value={name} onChange={e=>setName(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div><label className="text-sm text-slate-300">Acc Type</label><select value={accType} onChange={e=>setAccType(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">{ACC_TYPES.map(s=><option key={s}>{s}</option>)}</select></div>
-            <div><label className="text-sm text-slate-300">Account Capital ($)</label><input type="number" value={capital} onChange={e=>setCapital(parseFloat(e.target.value||"0"))} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2" placeholder="0.00"/></div>
-            <div><label className="text-sm text-slate-300">Capital Deposit Date</label><input type="date" value={depositDate} onChange={e=>setDepositDate(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
-          </div>
-          <div className="text-right"><button onClick={onClose} className="px-4 py-2 rounded-lg border border-slate-700 hover:bg-slate-900">Save & Close</button></div>
+      <div className="space-y-4">
+        <div><label className="text-sm text-slate-300">Name</label><input value={name} onChange={e=>setName(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div><label className="text-sm text-slate-300">Acc Type</label><select value={accType} onChange={e=>setAccType(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">{ACC_TYPES.map(s=><option key={s}>{s}</option>)}</select></div>
+          <div><label className="text-sm text-slate-300">Account Capital ($)</label><input type="number" value={capital} onChange={e=>setCapital(parseFloat(e.target.value||"0"))} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2" placeholder="0.00"/></div>
+          <div><label className="text-sm text-slate-300">Capital Deposit Date</label><input type="date" value={depositDate} onChange={e=>setDepositDate(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
         </div>
-      ):(
         <div className="space-y-3">
           <div><label className="text-sm text-slate-300">New Password</label><input type="password" value={pw1} onChange={e=>setPw1(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
           <div><label className="text-sm text-slate-300">Confirm Password</label><input type="password" value={pw2} onChange={e=>setPw2(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
           {msg&&<div className="text-sky-400 text-sm">{msg}</div>}
           <div className="text-right"><button onClick={savePw} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500">Update Password</button></div>
         </div>
-      )}
+        <div className="text-right"><button onClick={onClose} className="px-4 py-2 rounded-lg border border-slate-700 hover:bg-slate-900">Save & Close</button></div>
+      </div>
     </Modal>
   )
 }
 
-function SettingsPanel({name,setName,accType,setAccType,capital,setCapital,depositDate,setDepositDate,email}){
-  const [tab,setTab]=useState("personal"); const [pw1,setPw1]=useState(""); const [pw2,setPw2]=useState(""); const [msg,setMsg]=useState("");
-  const savePw=()=>{ if(!pw1||pw1.length<6){setMsg("Password must be at least 6 characters.");return}
-    if(pw1!==pw2){setMsg("Passwords do not match.");return}
-    const users=loadUsers();const i=users.findIndex(u=>u.email.toLowerCase()===(email||"").toLowerCase());
-    if(i>=0){users[i].password=pw1;saveUsers(users);setMsg("Password updated.");setPw1("");setPw2("")}
-  };
+function SettingsPanel({name,setName,accType,setAccType,capital,setCapital,depositDate,setDepositDate,email,symbols,setSymbols,strategies,setStrategies}){
+  const [tab,setTab]=useState("account"); const [newSym,setNewSym]=useState(""); const [newStrat,setNewStrat]=useState("");
+  const addSym=()=>{if(newSym&& !symbols.includes(newSym)){setSymbols([...symbols,newSym]);setNewSym("")}};
+  const delSym=s=>setSymbols(symbols.filter(x=>x!==s));
+  const addStrat=()=>{if(newStrat&& !strategies.includes(newStrat)){setStrategies([...strategies,newStrat]);setNewStrat("")}};
+  const delStrat=s=>setStrategies(strategies.filter(x=>x!==s));
   return(
     <div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-6">
       <div className="flex items-center gap-2 mb-4"><IconSettings/><div className="font-semibold">Settings</div></div>
       <div className="flex gap-2 mb-4">
-        <button onClick={()=>setTab("personal")} className={`px-3 py-1.5 rounded-lg border ${tab==="personal"?"bg-slate-700 border-slate-600":"border-slate-700"}`}>Personal Info</button>
-        <button onClick={()=>setTab("security")} className={`px-3 py-1.5 rounded-lg border ${tab==="security"?"bg-slate-700 border-slate-600":"border-slate-700"}`}>Privacy & Security</button>
+        <button onClick={()=>setTab("account")} className={`px-3 py-1.5 rounded-lg border ${tab==="account"?"bg-slate-700 border-slate-600":"border-slate-700"}`}>Account Setup</button>
+        <button onClick={()=>setTab("customize")} className={`px-3 py-1.5 rounded-lg border ${tab==="customize"?"bg-slate-700 border-slate-600":"border-slate-700"}`}>Customize Journal</button>
       </div>
-      {tab==="personal"?(
-        <div className="space-y-4">
-          <div><label className="text-sm text-slate-300">Name</label><input value={name} onChange={e=>setName(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div><label className="text-sm text-slate-300">Acc Type</label><select value={accType} onChange={e=>setAccType(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">{ACC_TYPES.map(s=><option key={s}>{s}</option>)}</select></div>
-            <div><label className="text-sm text-slate-300">Account Capital ($)</label><input type="number" value={capital} onChange={e=>setCapital(parseFloat(e.target.value||"0"))} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2" placeholder="0.00"/></div>
-            <div><label className="text-sm text-slate-300">Capital Deposit Date</label><input type="date" value={depositDate} onChange={e=>setDepositDate(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
-          </div>
-        </div>
+      {tab==="account"?(
+        <AccountSetupModal name={name} setName={setName} accType={accType} setAccType={setAccType} capital={capital} setCapital={setCapital} depositDate={depositDate} setDepositDate={setDepositDate} onClose={()=>{}} email={email}/>
       ):(
-        <div className="space-y-3">
-          <div><label className="text-sm text-slate-300">New Password</label><input type="password" value={pw1} onChange={e=>setPw1(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
-          <div><label className="text-sm text-slate-300">Confirm Password</label><input type="password" value={pw2} onChange={e=>setPw2(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
-          {msg&&<div className="text-sky-400 text-sm">{msg}</div>}
-          <div className="text-right"><button onClick={savePw} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500">Update Password</button></div>
+        <div className="space-y-6">
+          <div>
+            <div className="text-sm font-semibold mb-2">Symbols</div>
+            <div className="space-y-2">
+              {symbols.map(s=>(
+                <div key={s} className="flex items-center justify-between bg-slate-900/50 border border-slate-700 rounded-xl px-3 py-2">
+                  <div>{s}</div>
+                  <button onClick={()=>delSym(s)} className="text-red-400">✕</button>
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 flex gap-2">
+              <input value={newSym} onChange={e=>setNewSym(e.target.value)} className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/>
+              <button onClick={addSym} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500">Add</button>
+            </div>
+          </div>
+          <div>
+            <div className="text-sm font-semibold mb-2">Strategies</div>
+            <div className="space-y-2">
+              {strategies.map(s=>(
+                <div key={s} className="flex items-center justify-between bg-slate-900/50 border border-slate-700 rounded-xl px-3 py-2">
+                  <div>{s}</div>
+                  <button onClick={()=>delStrat(s)} className="text-red-400">✕</button>
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 flex gap-2">
+              <input value={newStrat} onChange={e=>setNewStrat(e.target.value)} className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/>
+              <button onClick={addStrat} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500">Add</button>
+            </div>
+          </div>
         </div>
       )}
     </div>
   )
 }
 
-function TradeModal({initial,onClose,onSave,onDelete,accType}){
-  const i=initial||{}; const [symbol,setSymbol]=useState(i.symbol||SYMBOLS[0]); const [side,setSide]=useState(i.side||"BUY");
-  const [date,setDate]=useState(i.date||todayISO()); const [lotSize,setLotSize]=useState(i.lotSize??0.01);
+function TradeModal({initial,onClose,onSave,onDelete,accType,lastLotSize,symbols,strategies}){
+  const i=initial||{}; const [symbol,setSymbol]=useState(i.symbol||symbols[0]); const [side,setSide]=useState(i.side||"BUY");
+  const [date,setDate]=useState(i.date||todayISO()); const [lotSize,setLotSize]=useState(i.lotSize??(lastLotSize??0.01));
   const [entry,setEntry]=useState(i.entry??""); const [exit,setExit]=useState(i.exit??"");
   const [tp1,setTp1]=useState(i.tp1??""); const [tp2,setTp2]=useState(i.tp2??""); const [sl,setSl]=useState(i.sl??"");
-  const [strategy,setStrategy]=useState(i.strategy||STRATEGIES[0]); const [exitType,setExitType]=useState(i.exitType||"TP");
+  const [strategy,setStrategy]=useState(i.strategy||strategies[0]); const [exitType,setExitType]=useState(i.exitType||"TP");
   const num=v=>(v===""||v===undefined||v===null)?undefined:parseFloat(v);
-  const calculateTPs = () => {
-    const en = num(entry);
-    const sll = num(sl);
-    if (en === undefined || sll === undefined) return;
-    const risk = side === "BUY" ? en - sll : sll - en;
-    if (risk <= 0) return;
-    const tp1Calc = side === "BUY" ? en + risk : en - risk;
-    const tp2Calc = side === "BUY" ? en + risk * 2 : en - risk * 2;
-    setTp1(tp1Calc);
-    setTp2(tp2Calc);
-  };
   const draft=useMemo(()=>({id:i.id,date,symbol,side,lotSize:parseFloat(lotSize||0),entry:num(entry),exit:num(exit),tp1:num(tp1),tp2:num(tp2),sl:num(sl),strategy,exitType}),[i.id,date,symbol,side,lotSize,entry,exit,tp1,tp2,sl,strategy,exitType]);
   const preview=useMemo(()=>{const v=computeDollarPnL(draft,accType);if(v===null||!isFinite(v))return"-";return`${formatPnlDisplay(accType,v)} (${formatUnits(accType,v)})`},[draft,accType]);
   return(
     <Modal title={i.id?"Edit Trade":"Add Trade"} onClose={onClose} maxClass="max-w-4xl">
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-        <div><label className="text-sm text-slate-300">Symbol</label><select value={symbol} onChange={e=>setSymbol(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">{SYMBOLS.map(s=><option key={s}>{s}</option>)}</select></div>
+        <div><label className="text-sm text-slate-300">Symbol</label><select value={symbol} onChange={e=>setSymbol(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">{symbols.map(s=><option key={s}>{s}</option>)}</select></div>
         <div><label className="text-sm text-slate-300">Action</label><div className="mt-1 grid grid-cols-2 gap-2">{["BUY","SELL"].map(s=>(<button key={s} onClick={()=>setSide(s)} className={`px-2 py-2 rounded-lg border ${side===s ? (s==="BUY" ? "bg-green-600 border-green-500" : "bg-red-600 border-red-500") : "border-slate-700"}`}>{s}</button>))}</div></div>
         <div><label className="text-sm text-slate-300">Date</label><input type="date" value={date} onChange={e=>setDate(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
-        <div><label className="text-sm text-slate-300">Lot size</label><input type="number" step="0.01" value={lotSize} onChange={e=>setLotSize(e.target.value)} className="w-24 mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
+        <div><label className="text-sm text-slate-300">Lot size</label><input type="number" step="0.01" value={lotSize} onChange={e=>setLotSize(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
         <div><label className="text-sm text-slate-300">Entry price</label><input type="number" step="0.0001" value={entry} onChange={e=>setEntry(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
         <div><label className="text-sm text-slate-300">Exit Price</label><input type="number" step="0.0001" value={exit} onChange={e=>setExit(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2" placeholder="Leave blank for OPEN"/></div>
         <div><label className="text-sm text-slate-300">TP 1</label><input type="number" step="0.0001" value={tp1} onChange={e=>setTp1(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
         <div><label className="text-sm text-slate-300">TP 2</label><input type="number" step="0.0001" value={tp2} onChange={e=>setTp2(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
         <div><label className="text-sm text-slate-300">Stop-Loss</label><input type="number" step="0.0001" value={sl} onChange={e=>setSl(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
-        <div className="flex items-end pb-2"><button onClick={calculateTPs} className="px-3 py-2 rounded-lg border border-blue-600 text-blue-300 hover:bg-blue-900/20">Calc TPs</button></div>
-        <div><label className="text-sm text-slate-300">Strategy</label><select value={strategy} onChange={e=>setStrategy(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">{STRATEGIES.map(s=><option key={s}>{s}</option>)}</select></div>
+        <div><label className="text-sm text-slate-300">Strategy</label><select value={strategy} onChange={e=>setStrategy(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">{strategies.map(s=><option key={s}>{s}</option>)}</select></div>
         <div><label className="text-sm text-slate-300">Exit Type</label><select value={exitType} onChange={e=>setExitType(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">{EXIT_TYPES.map(s=><option key={s}>{s}</option>)}</select></div>
       </div>
       <div className="mt-4 flex items-center justify-between">
@@ -211,6 +210,92 @@ function TradeModal({initial,onClose,onSave,onDelete,accType}){
         </div>
       </div>
     </Modal>
+  )
+}
+
+function NoteModal({initial,onClose,onSave,onDelete,trades}){
+  const i=initial||{}; const [date,setDate]=useState(i.date||todayISO()); const [text,setText]=useState(i.text||""); const [tradeIds,setTradeIds]=useState(i.tradeIds||[]);
+  const [images,setImages]=useState(i.images||[]); const fileInput=useRef(null);
+  const handleFiles=(e)=>{const files=Array.from(e.target.files);files.forEach(f=>{const r=new FileReader();r.onload=ev=>setImages(imgs=>[...imgs,ev.target.result]);r.readAsDataURL(f)})};
+  const delImg=idx=>setImages(images.filter((_,i)=>i!==idx));
+  const toggleTrade=id=>setTradeIds(ids=>ids.includes(id)?ids.filter(x=>x!==id):[...ids,id]);
+  return(
+    <Modal title={i.id?"Edit Note":"Add Note"} onClose={onClose}>
+      <div className="space-y-4">
+        <div><label className="text-sm text-slate-300">Date</label><input type="date" value={date} onChange={e=>setDate(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
+        <div><label className="text-sm text-slate-300">Note</label><textarea value={text} onChange={e=>setText(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 h-32"/></div>
+        <div>
+          <label className="text-sm text-slate-300">Images</label>
+          <div className="mt-1 flex flex-wrap gap-2">
+            {images.map((img,idx)=>(
+              <div key={idx} className="relative">
+                <img src={img} className="h-20 w-20 object-cover rounded"/>
+                <button onClick={()=>delImg(idx)} className="absolute top-0 right-0 text-red-400">✕</button>
+              </div>
+            ))}
+            <button onClick={()=>fileInput.current.click()} className="h-20 w-20 border border-dashed border-slate-700 rounded flex items-center justify-center">+</button>
+          </div>
+          <input type="file" multiple accept="image/*" ref={fileInput} onChange={handleFiles} style={{display:'none'}}/>
+        </div>
+        <div>
+          <label className="text-sm text-slate-300">Linked Trades</label>
+          <div className="mt-1 space-y-2 max-h-40 overflow-auto">
+            {trades.map(t=>(
+              <div key={t.id} className="flex items-center gap-2">
+                <input type="checkbox" checked={tradeIds.includes(t.id)} onChange={()=>toggleTrade(t.id)}/>
+                <div>{t.date} {t.symbol} {t.side}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="flex justify-end gap-2">
+          {i.id&&(<button onClick={()=>onDelete(i.id)} className="px-4 py-2 rounded-lg border border-red-600 text-red-400 hover:bg-red-900/20">Delete</button>)}
+          <button onClick={onClose} className="px-4 py-2 rounded-lg border border-slate-600 hover:bg-slate-700">Cancel</button>
+          <button onClick={()=>onSave({id:i.id,date,text,images,tradeIds})} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500">Save</button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
+function Notes({notes,setNotes,trades}){
+  const byDate=useMemo(()=>{const m={};notes.forEach(n=>{m[n.date]=m[n.date]||[];m[n.date].push(n)});return m},[notes]);
+  const dates=Object.keys(byDate).sort((a,b)=>new Date(b)-new Date(a));
+  const [showNote,setShowNote]=useState(false); const [editNote,setEditNote]=useState(null);
+  const addOrUpdate=(draft)=>{const id=draft.id||Math.random().toString(36).slice(2); const arr=notes.slice(); const idx=arr.findIndex(n=>n.id===id); const rec={...draft,id}; if(idx>=0)arr[idx]=rec; else arr.push(rec); setNotes(arr); setShowNote(false); setEditNote(null)};
+  const delNote=(id)=>setNotes(notes.filter(n=>n.id!==id));
+  return(
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="text-sm font-semibold">Notes</div>
+        <button onClick={()=>{setEditNote(null);setShowNote(true)}} className="px-3 py-1.5 rounded-lg border border-slate-700 hover:bg-slate-800 flex items-center gap-1"><IconPlus className="h-4 w-4"/> Add Note</button>
+      </div>
+      {dates.map(date=>(
+        <div key={date} className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4">
+          <div className="text-sm font-semibold mb-2">{date}</div>
+          <div className="space-y-3">
+            {byDate[date].map(n=>(
+              <div key={n.id} className="bg-slate-900/50 border border-slate-700 rounded-xl p-3">
+                <div className="whitespace-pre-wrap">{n.text}</div>
+                {n.images.length>0&&(
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {n.images.map((img,idx)=><img key={idx} src={img} className="h-24 w-24 object-cover rounded"/>)}
+                  </div>
+                )}
+                {n.tradeIds.length>0&&(
+                  <div className="mt-2 text-sm text-slate-400">Linked trades: {n.tradeIds.map(id=>trades.find(t=>t.id===id)?.symbol||id).join(", ")}</div>
+                )}
+                <div className="mt-2 flex justify-end">
+                  <button onClick={()=>{setEditNote(n);setShowNote(true)}} className="px-2 py-1 rounded border border-slate-700 hover:bg-slate-700">Edit</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+      {dates.length===0&&<div className="text-slate-400">No notes yet.</div>}
+      {showNote&&<NoteModal initial={editNote} onClose={()=>{setShowNote(false);setEditNote(null)}} onSave={addOrUpdate} onDelete={delNote} trades={trades}/>}
+    </div>
   )
 }
 
@@ -268,7 +353,7 @@ function CalendarModal({onClose,trades,view,setView,month,setMonth,year,setYear,
 }
 
 function usePersisted(email){
-  const fresh = () => ({name:"",email:email||"",accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[]});
+  const fresh = () => ({name:"",email:email||"",accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[],notes:[],symbols:[...DEFAULT_SYMBOLS],strategies:[...DEFAULT_STRATEGIES]});
   const [state,setState]=useState(()=>{const s=loadState(email||getCurrent());return s||fresh()});
   useEffect(()=>{
     const loaded = loadState(email);
@@ -304,6 +389,37 @@ function GeneralStats({trades,accType,capital,depositDate}){
     <Stat label="Realized P&L" value={formatPnlDisplay(accType,total)}/>
     <Stat label="Win Rate" value={`${wr}%`}/>
     <Stat label="Open" value={open}/>
+  </div>)
+}
+
+function StrategyStats({trades,accType,strategies}){
+  const stats=useMemo(()=>{const m={};strategies.forEach(s=>m[s]={wins:0,losses:0,trades:0}});
+    trades.forEach(t=>{
+      const v=computeDollarPnL(t,accType); if(v===null) return;
+      const s=t.strategy; if(!s||!m[s]) return;
+      m[s].trades++; if(v>0) m[s].wins++; else if(v<0) m[s].losses++;
+    });
+    let best=null; let bestWr=0;
+    Object.entries(m).forEach(([s,st])=>{
+      st.winRate=st.trades>0?Math.round((st.wins/st.trades)*100):0;
+      if(st.winRate>bestWr){bestWr=st.winRate;best=s}
+    });
+    return {m,best,bestWr};
+  },[trades,accType,strategies]);
+  return(<div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4">
+    <div className="text-sm font-semibold mb-2">Strategy Statistics</div>
+    {stats.best&&<div className="mb-4">Best Strategy: {stats.best} with {stats.bestWr}% win rate</div>}
+    <div className="space-y-2">
+      {Object.entries(stats.m).map(([s,st])=>(
+        <div key={s} className="flex items-center gap-2">
+          <div className="w-32">{s}</div>
+          <div className="flex-1 bg-slate-900 h-4 rounded">
+            <div style={{width:`${st.winRate}%`}} className="bg-blue-600 h-4 rounded"></div>
+          </div>
+          <div className="w-16">{st.winRate}%</div>
+        </div>
+      ))}
+    </div>
   </div>)
 }
 
@@ -471,6 +587,7 @@ function App(){
   useEffect(()=>{if(state&&(!state.name||!state.depositDate)) setShowAcct(true)},[state?.email]);
   useEffect(()=>{if(typeof emailjs !== 'undefined'){emailjs.init({publicKey: "YOUR_EMAILJS_PUBLIC_KEY"});}},[]); // Initialize EmailJS
 
+  const lastLotSize=state.trades.length>0?state.trades[0].lotSize:null;
   const openTrades=state.trades.filter(t=> !t.exitType || t.exitType === "Trade In Progress").length;
   const realized=state.trades.filter(t=>new Date(t.date)>=new Date(state.depositDate)&&t.exitType && t.exitType !== "Trade In Progress").map(t=>computeDollarPnL(t,state.accType)).filter(v=>v!==null&&isFinite(v)).reduce((a,b)=>a+b,0);
   const effectiveCapital=state.capital+realized;
@@ -511,6 +628,7 @@ function App(){
             case 'SL': t.sl = v; break;
             case 'Strategy': t.strategy = v; break;
             case 'Exit Type': t.exitType = v; break;
+            // Ignore P&L and P&L (Units)
           }
         });
         if (t.date && t.symbol) {
@@ -532,7 +650,7 @@ function App(){
   };
 
   const login=(email,password,setErr)=>{const u=users.find(x=>x.email.toLowerCase()===email.toLowerCase());
-    if(!u){ if(password==="__google__"){const nu=[...users,{name:email.split("@")[0],email,password:""}]; setUsers(nu); saveUsers(nu); const fresh={name:email.split("@")[0],email,accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[]}; saveState(email,fresh); saveCurrent(email); setCurrentEmail(email); return;}
+    if(!u){ if(password==="__google__"){const nu=[...users,{name:email.split("@")[0],email,password:""}]; setUsers(nu); saveUsers(nu); const fresh={name:email.split("@")[0],email,accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[],notes:[],symbols:[...DEFAULT_SYMBOLS],strategies:[...DEFAULT_STRATEGIES]}; saveState(email,fresh); saveCurrent(email); setCurrentEmail(email); return;}
       setErr("No such user. Please sign up."); return;}
     if(password!=="__google__" && u.password!==password){setErr("Wrong password.");return}
     setErr(""); saveCurrent(u.email); setCurrentEmail(u.email);
@@ -540,7 +658,7 @@ function App(){
 
   const signup=(name,email,password,setErr)=>{if(users.some(x=>x.email.toLowerCase()===email.toLowerCase())){setErr("Email already registered.");return}
     const u={name,email,password}; const nu=[...users,u]; setUsers(nu); saveUsers(nu);
-    const fresh={name,email,accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[]}; saveState(email,fresh); saveCurrent(email); setCurrentEmail(email);
+    const fresh={name,email,accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[],notes:[],symbols:[...DEFAULT_SYMBOLS],strategies:[...DEFAULT_STRATEGIES]}; saveState(email,fresh); saveCurrent(email); setCurrentEmail(email);
   };
 
   const resetStart=(emailGuess)=>{setShowReset(true)};
@@ -558,7 +676,6 @@ function App(){
     <div className="text-sm text-slate-300">Capital</div><div className="text-2xl font-bold mb-1">{state.accType==='Cent Account'?`${r2(effectiveCapital*100).toFixed(2)} ¢`:fmt$(effectiveCapital)}</div>
     <div className="text-xs text-slate-400">Deposit: {state.depositDate}</div>
     <div className="mt-3 text-sm text-slate-300">Open trades</div><div className="text-lg font-semibold">{openTrades}</div>
-    <div className="pt-2"><button onClick={()=>setShowAcct(true)} className="w-full px-3 py-2 rounded-lg border border-slate-700">Account Setup</button></div>
     <div className="pt-2"><button onClick={()=>{setEditItem(null);setShowTrade(true)}} className="w-full px-3 py-2 rounded-lg border border-slate-700 flex items-center justify-center gap-2"><IconPlus/>Add trade</button></div>
   </div>);
 
@@ -566,6 +683,7 @@ function App(){
     {navBtn("Dashboard","dashboard",IconHome)}
     {navBtn("Histories","histories",IconHistory)}
     <button onClick={()=>{setShowCal(true);setCalView("month")}} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-700 hover:bg-slate-800"><IconCalendar/>Calendar</button>
+    {navBtn("Notes","notes",IconNotes)}
     {navBtn("Settings","settings",IconSettings)}
   </>);
 
@@ -576,11 +694,13 @@ function App(){
       <div className="text-sm font-semibold">General statistics</div>
       <GeneralStats trades={state.trades} accType={state.accType} capital={state.capital} depositDate={state.depositDate}/>
       <DetailedStats trades={state.trades} accType={state.accType}/>
+      <StrategyStats trades={state.trades} accType={state.accType} strategies={state.strategies}/>
     </div>)}
     {page==="histories"&&(<Histories trades={state.trades} accType={state.accType} onEdit={t=>{setEditItem(t);setShowTrade(true)}} onDelete={delTrade}/>)}
-    {page==="settings"&&(<SettingsPanel name={state.name} setName={v=>setState({...state,name:v})} accType={state.accType} setAccType={v=>setState({...state,accType:v})} capital={state.capital} setCapital={v=>setState({...state,capital:v||0})} depositDate={state.depositDate} setDepositDate={v=>setState({...state,depositDate:v})} email={state.email}/>)}
+    {page==="notes"&&(<Notes notes={state.notes||[]} setNotes={notes=>setState({...state,notes})} trades={state.trades}/>)}
+    {page==="settings"&&(<SettingsPanel name={state.name} setName={v=>setState({...state,name:v})} accType={state.accType} setAccType={v=>setState({...state,accType:v})} capital={state.capital} setCapital={v=>setState({...state,capital:v||0})} depositDate={state.depositDate} setDepositDate={v=>setState({...state,depositDate:v})} email={state.email} symbols={state.symbols} setSymbols={symbols=>setState({...state,symbols})} strategies={state.strategies} setStrategies={strategies=>setState({...state,strategies})}/>)}
 
-    {showTrade&&(<TradeModal initial={editItem} onClose={()=>{setShowTrade(false);setEditItem(null)}} onSave={addOrUpdate} onDelete={delTrade} accType={state.accType}/>)}
+    {showTrade&&(<TradeModal initial={editItem} onClose={()=>{setShowTrade(false);setEditItem(null)}} onSave={addOrUpdate} onDelete={delTrade} accType={state.accType} lastLotSize={lastLotSize} symbols={state.symbols} strategies={state.strategies}/>)}
     {showAcct&&(<AccountSetupModal name={state.name} setName={v=>setState({...state,name:v})} accType={state.accType} setAccType={v=>setState({...state,accType:v})} capital={state.capital} setCapital={v=>setState({...state,capital:v||0})} depositDate={state.depositDate} setDepositDate={v=>setState({...state,depositDate:v})} onClose={()=>setShowAcct(false)} email={state.email}/>)}
     {showCal&&(<CalendarModal onClose={()=>setShowCal(false)} trades={state.trades} view={calView} setView={setCalView} month={calMonth} setMonth={setCalMonth} year={calYear} setYear={setCalYear} selectedDate={calSel} setSelectedDate={setCalSel} accType={state.accType}/>)}
     {showReset&&(<ResetModal email="" onClose={()=>setShowReset(false)}/>)}
