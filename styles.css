@@ -1,18 +1,38 @@
 html,body,#root{height:100%}
+
 .hero{
-  background-image: url('./hero.jpg'), radial-gradient(1200px 800px at 20% 20%, #1e3a8a 0%, #020617 60%);
+  background-image: url('./hero.jpg'),
+    radial-gradient(1200px 800px at 20% 20%, #1e3a8a 0%, #020617 60%);
   background-size: cover;
   background-position: center;
 }
+
+/* thin scrollbars */
 .scroll-smooth::-webkit-scrollbar{height:8px;width:8px}
 .scroll-smooth::-webkit-scrollbar-thumb{background:#334155;border-radius:8px}
 
-/* Tailwind (CDN) utilities */
+/* simple spinner used in import modal */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner {
+  border: 3px solid rgba(148,163,184,0.25);
+  border-top-color: rgba(56,189,248,1);
+  border-radius: 50%;
+  width: 28px; height: 28px;
+  animation: spin 0.9s linear infinite;
+}
+
+/* “futuristic” glow badges for Notes’ trade chips */
+.glow-badge{
+  background: linear-gradient(90deg, rgba(56,189,248,.15), rgba(99,102,241,.15));
+  box-shadow: 0 0 0 1px rgba(99,102,241,.35) inset, 0 0 12px rgba(56,189,248,.25);
+  border-radius: 12px;
+  padding: 6px 10px;
+}
+
+/* Drag handle cursor */
+.handle { cursor: grab; }
+
+/* Tailwind placeholders (kept for completeness if you build Tailwind later) */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* tiny helper for clamped preview text if Tailwind line-clamp plugin isn't present */
-.line-clamp-4{
-  display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;
-}
