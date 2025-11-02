@@ -1,35 +1,41 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Nitty Gritty</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Nitty Gritty – Trading Journal</title>
 
-  <!-- Favicon & logo (absolute path; prevents flicker/loops) -->
-  <link rel="icon" href="/logo-ng.png" type="image/png">
+  <!-- Prevent logo flicker by preloading + using a single absolute path -->
   <link rel="preload" as="image" href="/logo-ng.png"/>
+  <link rel="icon" type="image/png" href="/logo-ng.png"/>
 
-  <!-- Tailwind CDN (ok for now; move to CLI/PostCSS for production build) -->
+  <!-- Tailwind (CDN ok for now; warnings are expected in console) -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="./styles.css" />
 
-  <!-- Google Identity Services -->
+  <!-- App stylesheet -->
+  <link rel="stylesheet" href="./styles.css"/>
+
+  <!-- Public config (edit as needed) -->
   <script>
-    window.GOOGLE_CLIENT_ID = "579461879935-qaj9nta2pfbrn17ss5idu2k39p4joir4.apps.googleusercontent.com";
-    // Cloudflare Reset Email endpoint (Worker route)
-    window.CF_RESET_ENDPOINT = "https://nittygritty.online/api/reset-email";
-    // Build stamp
-    window.NG_BUILD = "2025-11-02r3";
+    window.NG_GOOGLE_CLIENT_ID = "579461879935-qaj9nta2pfbrn17ss5idu2k39p4joir4.apps.googleusercontent.com";
+    window.CF_RESET_ENDPOINT  = "https://nittygritty.online/api/reset-email"; // your Worker route
+    window.NG_BUILD_TAG = "ng-stable-2025-11-02";
   </script>
+
+  <!-- Google Identity Services (safe if it fails) -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
-  <!-- React UMD + Babel (keep; if you later build, drop Babel and use your bundle) -->
+  <!-- React + ReactDOM UMD (production) -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+  <!-- Babel in-browser (ok for GH Pages; move to bundler later) -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body class="bg-slate-950 text-slate-100">
   <div id="root"></div>
+
+  <!-- App script (Babel will transpile) -->
   <script type="text/babel" data-presets="env,react" src="./script.js"></script>
 </body>
 </html>
