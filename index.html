@@ -4,29 +4,30 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nitty Gritty</title>
-  <link rel="icon" href="./logo-ng.png" type="image/png">
+  <link rel="icon" href="./logo-ng.png" type="image/png" />
   <link rel="stylesheet" href="./styles.css" />
 
-  <!-- Tailwind CDN (fine for dev; build for prod per warning) -->
+  <!-- Tailwind (CDN). Production note: build Tailwind with CLI/PostCSS for best performance. -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Google Sign-In (unchanged) -->
+  <!-- Google Identity Services -->
   <script>
+    // Web client for https://nittygritty.online. Must match the OAuth 2.0 Client ID configured in Google Cloud.
     window.GOOGLE_CLIENT_ID = "579461879935-qaj9nta2pfbrn17ss5idu2k39p4joir4.apps.googleusercontent.com";
-    // Optional: set your Cloudflare Worker endpoint that sends reset emails
-    // Example: "https://reset.nittygritty.online/send"
-    window.CF_RESET_ENDPOINT = "/api/send-reset"; 
-    // If you mount the Worker on a subdomain, put the full URL above.
+    // Allowed origins we pass to GIS to avoid embedded/origin checks failing.
+    window.ALLOWED_ORIGINS = ["https://nittygritty.online","https://www.nittygritty.online"];
   </script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
-  <!-- React + ReactDOM + Babel for JSX-in-browser -->
+  <!-- React / ReactDOM / Babel for single-file demo; precompile for production. -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body class="bg-slate-950 text-slate-100">
+  <noscript>This app requires JavaScript.</noscript>
   <div id="root"></div>
+
   <script type="text/babel" data-presets="env,react" src="./script.js"></script>
 </body>
 </html>
