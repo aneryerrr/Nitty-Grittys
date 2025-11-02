@@ -5,30 +5,47 @@ html,body,#root{height:100%}
   background-position: center;
 }
 
-/* Smooth minimal scrollbars */
-*::-webkit-scrollbar{height:8px;width:8px}
-*::-webkit-scrollbar-thumb{background:#334155;border-radius:8px}
+/* Slim, modern scrollbars */
+.scroll-smooth::-webkit-scrollbar{height:8px;width:8px}
+.scroll-smooth::-webkit-scrollbar-thumb{background:#334155;border-radius:8px}
 
-/* Import overlay */
-#import-overlay{
-  position:fixed; inset:0; z-index:60;
-  display:none; align-items:center; justify-content:center;
-  background:rgba(0,0,0,.6); backdrop-filter: blur(6px);
+/* Import progress overlay */
+.ng-overlay{
+  position:fixed;inset:0;z-index:50;
+  background:rgba(2,6,23,.75);
+  backdrop-filter:blur(6px);
+  display:flex;align-items:center;justify-content:center;padding:24px;
 }
-.import-card{
-  width:min(92vw,560px);
-  background:#0b1220; border:1px solid #1f2937; border-radius:16px;
-  padding:18px;
-  box-shadow:0 10px 40px rgba(0,0,0,.5);
+.ng-card{
+  width:min(560px,96vw);
+  border:1px solid #334155;border-radius:20px;
+  background:linear-gradient(135deg,#0f172a,#0b1222);
+  box-shadow:0 10px 40px rgba(0,0,0,.45);
+  padding:20px;
 }
-.progress{
-  height:10px; background:#0f172a; border:1px solid #1f2937; border-radius:999px; overflow:hidden;
+.ng-progress{height:10px;border-radius:9999px;background:#0b1222;border:1px solid #334155;overflow:hidden}
+.ng-progress>span{display:block;height:100%;width:0;background:linear-gradient(90deg,#2563eb,#22d3ee)}
+.ng-badge{font-size:11px;padding:.1rem .5rem;border-radius:9999px;background:#0b1222;border:1px solid #334155}
+
+/* Radial gauge for Best Strategy */
+.gauge{
+  --p:0; /* percentage 0-100 */
+  width:120px;height:120px;border-radius:50%;
+  background:
+    conic-gradient(#22d3ee calc(var(--p)*1%), #1f2937 0);
+  display:grid;place-items:center;
+  border:1px solid #334155;
 }
-.progress>div{
-  height:100%; width:0%;
-  background:linear-gradient(90deg,#60a5fa,#22d3ee);
-  transition:width .2s ease;
+.gauge>div{
+  width:88px;height:88px;border-radius:50%;
+  background:#0b1222;border:1px solid #334155;
+  display:grid;place-items:center;font-weight:700;
 }
 
-/* Compact chips */
-.chip{display:inline-flex;align-items:center;gap:.4rem;padding:.25rem .6rem;border-radius:999px;border:1px solid #334155;background:#0b1220;color:#cbd5e1;font-size:.8rem}
+/* Minimal tag chips */
+.tag{display:inline-flex;gap:.25rem;align-items:center;padding:.25rem .5rem;border-radius:12px;border:1px solid #334155;background:#0b1222}
+
+/* Keep Tailwind directives to allow optional PostCSS build if used */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
