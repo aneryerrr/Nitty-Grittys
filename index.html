@@ -4,34 +4,25 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nitty Gritty</title>
-
-  <!-- Always load the logo from /public -->
-  <link rel="icon" href="/logo-ng.png" type="image/png" />
-  <link rel="preload" as="image" href="/logo-ng.png" />
-
+  <meta name="theme-color" content="#020617" />
+  <link rel="icon" href="./logo-ng.png" type="image/png">
   <link rel="stylesheet" href="./styles.css" />
-
-  <!-- Tailwind (CDN). Production note: build Tailwind with CLI/PostCSS for best performance. -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+</head>
+<body class="bg-slate-950 text-slate-100">
+  <div id="root"></div>
 
-  <!-- Google Identity Services -->
   <script>
-    // Web client for https://nittygritty.online. Must match the OAuth 2.0 Client ID configured in Google Cloud.
     window.GOOGLE_CLIENT_ID = "579461879935-qaj9nta2pfbrn17ss5idu2k39p4joir4.apps.googleusercontent.com";
-    // Allowed origins we pass to GIS to avoid embedded/origin checks failing.
-    window.ALLOWED_ORIGINS = ["https://nittygritty.online","https://www.nittygritty.online"];
+    // Optional: POST user signups/logins here if you have a backend endpoint
+    // window.NG_USERS_WEBHOOK_URL = "https://your-backend.example.com/users/events";
   </script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
-  <!-- React / ReactDOM / Babel for single-file demo; precompile for production. -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-</head>
-<body class="bg-slate-950 text-slate-100">
-  <noscript>This app requires JavaScript.</noscript>
-  <div id="root"></div>
-
   <script type="text/babel" data-presets="env,react" src="./script.js"></script>
 </body>
 </html>
