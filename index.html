@@ -4,37 +4,32 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nitty Gritty</title>
-  <link rel="icon" href="./logo-ng.png" type="image/png" />
+
+  <!-- Favicon & logo (absolute path; prevents flicker/loops) -->
+  <link rel="icon" href="/logo-ng.png" type="image/png">
+  <link rel="preload" as="image" href="/logo-ng.png"/>
+
+  <!-- Tailwind CDN (ok for now; move to CLI/PostCSS for production build) -->
+  <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="./styles.css" />
 
-  <!-- Tailwind CDN (fine for now on GitHub Pages; for production, build with CLI/PostCSS) -->
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Runtime configuration -->
-  <script>
-    // ✅ Your real Google OAuth Web Client (MUST have these origins whitelisted in Google Cloud Console)
-    window.GOOGLE_CLIENT_ID = "579461879935-qaj9nta2pfbrn17ss5idu2k39p4joir4.apps.googleusercontent.com";
-    window.ALLOWED_ORIGINS = ["https://nittygritty.online","https://www.nittygritty.online"];
-
-    // ✅ Cloudflare Worker endpoint you created (route it to /api/reset-email)
-    // If you used a different path, change it here.
-    window.CF_RESET_ENDPOINT = "https://nittygritty.online/api/reset-email";
-  </script>
-
   <!-- Google Identity Services -->
+  <script>
+    window.GOOGLE_CLIENT_ID = "579461879935-qaj9nta2pfbrn17ss5idu2k39p4joir4.apps.googleusercontent.com";
+    // Cloudflare Reset Email endpoint (Worker route)
+    window.CF_RESET_ENDPOINT = "https://nittygritty.online/api/reset-email";
+    // Build stamp
+    window.NG_BUILD = "2025-11-02r3";
+  </script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
-  <!-- React / ReactDOM / Babel (single-file demo). For production, precompile. -->
+  <!-- React UMD + Babel (keep; if you later build, drop Babel and use your bundle) -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
-
 <body class="bg-slate-950 text-slate-100">
-  <noscript>This app requires JavaScript.</noscript>
   <div id="root"></div>
-
-  <!-- IMPORTANT: using Babel transformer to allow one-file DX on GitHub Pages -->
   <script type="text/babel" data-presets="env,react" src="./script.js"></script>
 </body>
 </html>
