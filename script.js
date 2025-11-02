@@ -361,13 +361,13 @@ function GeneralStats({trades,accType,capital,depositDate}){
 
 function StrategyWinRate({trades,accType,customStrategies}){
   const closed=trades.filter(t=>t.exitType && t.exitType !== "Trade In Progress");
-  if(closed.length===0) return null;
-  const stats=useMemo(()=>{const m={}; customStrategies.forEach(s=>{m[s]={wins:0,losses:0}}); 
-    closed.forEach(t=>{const pnl=computeDollarPnL(t,accType); if(pnl>0)m[t.strategy].wins++; else if(pnl<0)m[t.strategy].losses++});
-    return Object.entries(m).map(([s,{wins,losses}])=>({strategy:s,winRate:(wins+losses)>0?Math.round((wins/(wins+losses))*100):0})).sort((a,b)=>b.winRate-a.winRate)
+  if(closed.length < 2) return null;
+  const stats=useMemo(()=>{const m={}; customStrategies.forEach(s=>{m[s]={wins:0,losses:0,total:0}}); 
+    closed.forEach(t=>{const pnl=computeDollarPnL(t,accType); m[t.strategy].total++; if(pnl>0)m[t.strategy].wins++; else if(pnl<0)m[t.strategy].losses++});
+    return Object.entries(m).filter(([s,v])=>v.total>0).map(([s,v])=>({strategy:s,winRate:Math.round((v.wins/v.total)*100)})).sort((a,b)=>b.winRate-a.winRate)
   },[trades,accType,customStrategies]);
   const best=stats[0];
-  if(best.winRate===0) return null;
+  if(best.winRate===0 || stats.length < 2) return null;
   return(<div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4">
     <div className="text-sm font-semibold mb-2">Best Strategy</div>
     <div className="flex items-center gap-4">
@@ -392,13 +392,12 @@ function DetailedStats({trades,accType}){
   </div>)
 }
 
-function Histories({trades,accType,onEdit,onDelete,notes}){
-  const linkedNotes=useMemo(()=>{const m={}; notes.forEach(n=>n.tradeIds?.forEach(tid=>m[tid]=(m[tid]||[]).concat(n))); return m},[notes]);
+function Histories({trades,accType,onEdit,onDelete}){
   return(<div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4">
     <div className="flex items-center justify-between mb-2"><div className="text-sm font-semibold">Trade History</div></div>
     <div className="overflow-auto"><table className="min-w-full text-sm">
-      <thead><tr><Th>Date</Th><Th>Symbol</Th><Th>Side</Th><Th>Lot size</Th><Th>Entry</Th><Th>Exit</Th><Th>TP1</Th><Th>TP2</Th><Th>SL</Th><Th>Exit Type</Th><Th>P&L</Th><Th>P&L (Units)</Th><Th>Outcome</Th><Th>Notes</Th><Th>Status</Th><Th>Actions</Th></tr></thead>
-      <tbody>{trades.map(t=>{const v=computeDollarPnL(t,accType);const closed= t.exitType && t.exitType !== "Trade In Progress";const ln=linkedNotes[t.id]||[];return(<tr key={t.id} className="border-t border-slate-700">
+      <thead><tr><Th>Date</Th><Th>Symbol</Th><Th>Side</Th><Th>Lot size</Th><Th>Entry</Th><Th>Exit</Th><Th>TP1</Th><Th>TP2</Th><Th>SL</Th><Th>Exit Type</Th><Th>P&L</Th><Th>P&L (Units)</Th><Th>Outcome</Th><Th>Status</Th><Th>Actions</Th></tr></thead>
+      <tbody>{trades.map(t=>{const v=computeDollarPnL(t,accType);const closed= t.exitType && t.exitType !== "Trade In Progress";return(<tr key={t.id} className="border-t border-slate-700">
         <Td>{t.date}</Td><Td>{t.symbol}</Td><Td>{t.side}</Td><Td>{t.lotSize}</Td>
         <Td>{typeof t.entry==='number'?t.entry:''}</Td><Td>{typeof t.exit==='number'?t.exit:''}</Td>
         <Td>{typeof t.tp1==='number'?t.tp1:''}</Td><Td>{typeof t.tp2==='number'?t.tp2:''}</Td><Td>{typeof t.sl==='number'?t.sl:''}</Td>
@@ -406,7 +405,6 @@ function Histories({trades,accType,onEdit,onDelete,notes}){
         <Td className={v>0?'text-green-400':v<0?'text-red-400':''}>{v===null?'-':formatPnlDisplay(accType,v)}</Td>
         <Td className={v>0?'text-green-400':v<0?'text-red-400':''}>{v===null?'-':formatUnits(accType,v)}</Td>
         <Td>{t.outcome||''}</Td>
-        <Td>{t.notes||''}</Td>
         <Td>{closed?'CLOSED':'OPEN'}</Td>
         <Td><div className="flex gap-2">
           <button onClick={()=>onEdit(t)} className="px-2 py-1 rounded-lg border border-slate-700 hover:bg-slate-700">✎</button>
@@ -547,7 +545,6 @@ function App(){
   const [showReset,setShowReset]=useState(false); const [resetToken,setResetToken]=useState("");
 
   useEffect(()=>{const hash=new URLSearchParams(location.hash.slice(1));const tok=hash.get("reset"); if(tok){setResetToken(tok)}},[]);
-  useEffect(()=>{if(typeof emailjs !== 'undefined'){emailjs.init({publicKey: "YOUR_EMAILJS_PUBLIC_KEY"});}},[]); // Initialize EmailJS
 
   const openTrades=state.trades.filter(t=> !t.exitType || t.exitType === "Trade In Progress").length;
   const realized=state.trades.filter(t=>new Date(t.date)>=new Date(state.depositDate)&&t.exitType && t.exitType !== "Trade In Progress").map(t=>computeDollarPnL(t,state.accType)).filter(v=>v!==null&&isFinite(v)).reduce((a,b)=>a+b,0);
@@ -595,7 +592,6 @@ function App(){
             case 'P&L ($)': t.importedPnL = v; break;
             case 'P&L (Units)': t.importedPnLUnits = v; break;
             case 'Outcome': t.outcome = v; break;
-            case 'Notes': t.notes = v; break;
           }
         });
         if (t.date && t.symbol) {
