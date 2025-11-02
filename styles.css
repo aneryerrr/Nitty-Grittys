@@ -1,23 +1,20 @@
 html,body,#root{height:100%}
-
 .hero{
-  background-image: radial-gradient(1200px 800px at 20% 20%, #1e3a8a 0%, #020617 60%), url('./hero.jpg');
-  background-size: cover; background-position: center;
+  background-image:
+    radial-gradient(1200px 800px at 20% 20%, #1e3a8a 0%, #020617 60%),
+    url('/hero.jpg');
+  background-size: cover;
+  background-position: center;
 }
+.scroll-smooth::-webkit-scrollbar{height:8px;width:8px}
+.scroll-smooth::-webkit-scrollbar-thumb{background:#334155;border-radius:8px}
 
-/* Compact scrollbars on overflow panes */
-::-webkit-scrollbar{height:8px;width:8px}
-::-webkit-scrollbar-thumb{background:#334155;border-radius:8px}
+/* Small utility for chips/badges */
+.badge{display:inline-flex;align-items:center;gap:.4rem;padding:.25rem .5rem;border-radius:.5rem;border:1px solid rgb(51 65 85/.7);background:rgb(2 6 23/.6)}
+.badge-dot{width:.5rem;height:.5rem;border-radius:9999px;background:currentColor}
 
-/* Chips */
-.badge{display:inline-flex;gap:.35rem;align-items:center;padding:.15rem .5rem;border-radius:.5rem;font-size:.75rem}
-
-/* Import overlay */
-.import-mask{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.6);z-index:60}
-.import-mask.show{display:flex}
-.import-card{background:rgba(15,23,42,.92);backdrop-filter:saturate(140%) blur(6px);border:1px solid #334155;border-radius:1rem;padding:1rem;max-width:640px}
-
-/* Full-pane note composer (fills main content area visually) */
-.note-full{position:fixed;inset:56px 0 0 288px; /* header 56px, sidebar 288px */
-  background-color:#0f172a; z-index:25; border-left:1px solid #0b1220}
-@media (max-width: 1024px){ .note-full{inset:56px 0 0 0;} }
+/* Overlay/spinner */
+.ng-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);z-index:60}
+.ng-card{background:#0b1220;border:1px solid #1f2a44;border-radius:1rem;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+.ng-fade{animation:ngf .18s ease-out}
+@keyframes ngf{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
