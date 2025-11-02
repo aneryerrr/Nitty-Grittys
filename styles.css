@@ -1,76 +1,11 @@
 html,body,#root{height:100%}
-
-/* hero stays as-is */
 .hero{
   background-image: url('./hero.jpg'), radial-gradient(1200px 800px at 20% 20%, #1e3a8a 0%, #020617 60%);
   background-size: cover;
   background-position: center;
 }
-
-/* smooth scrollbars */
 .scroll-smooth::-webkit-scrollbar{height:8px;width:8px}
 .scroll-smooth::-webkit-scrollbar-thumb{background:#334155;border-radius:8px}
-
-/* Tailwind */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Import overlay */
-.import-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(2, 6, 23, 0.75);
-  backdrop-filter: blur(2px);
-}
-
-.import-card {
-  width: min(92vw, 520px);
-  background: #0b1220;
-  border: 1px solid #334155;
-  border-radius: 16px;
-  padding: 18px 20px;
-  box-shadow: 0 10px 50px rgba(0,0,0,.5);
-}
-
-.spinner {
-  height: 28px;
-  width: 28px;
-  border: 3px solid #1f2937;
-  border-top-color: #60a5fa;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* Notes “futuristic chip” for referred trades */
-.note-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  border: 1px solid #334155;
-  background: linear-gradient(180deg, rgba(30,58,138,.18), rgba(2,6,23,.4));
-  border-radius: 14px;
-  padding: 8px 12px;
-  font-size: 12px;
-}
-
-.note-chip .pill {
-  border: 1px solid #475569;
-  border-radius: 999px;
-  padding: 2px 8px;
-  font-size: 11px;
-  opacity: .9;
-}
-
-/* Notes composer: slightly smaller than before */
-.notes-shell {
-  max-width: 52rem; /* ~ 832px */
-  margin-left: auto;
-  margin-right: auto;
-}
