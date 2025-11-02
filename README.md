@@ -1,2 +1,2 @@
-# Nitty-Grittys
+# Nitty-Gritty
 Trading Journal
