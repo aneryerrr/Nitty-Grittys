@@ -7,27 +7,34 @@
   <link rel="icon" href="./logo-ng.png" type="image/png" />
   <link rel="stylesheet" href="./styles.css" />
 
-  <!-- Tailwind (CDN). Production note: build Tailwind with CLI/PostCSS for best performance. -->
+  <!-- Tailwind CDN (fine for now on GitHub Pages; for production, build with CLI/PostCSS) -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Google Identity Services -->
+  <!-- Runtime configuration -->
   <script>
-    // Web client for https://nittygritty.online. Must match the OAuth 2.0 Client ID configured in Google Cloud.
+    // ✅ Your real Google OAuth Web Client (MUST have these origins whitelisted in Google Cloud Console)
     window.GOOGLE_CLIENT_ID = "579461879935-qaj9nta2pfbrn17ss5idu2k39p4joir4.apps.googleusercontent.com";
-    // Allowed origins we pass to GIS to avoid embedded/origin checks failing.
     window.ALLOWED_ORIGINS = ["https://nittygritty.online","https://www.nittygritty.online"];
+
+    // ✅ Cloudflare Worker endpoint you created (route it to /api/reset-email)
+    // If you used a different path, change it here.
+    window.CF_RESET_ENDPOINT = "https://nittygritty.online/api/reset-email";
   </script>
+
+  <!-- Google Identity Services -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
-  <!-- React / ReactDOM / Babel for single-file demo; precompile for production. -->
+  <!-- React / ReactDOM / Babel (single-file demo). For production, precompile. -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
+
 <body class="bg-slate-950 text-slate-100">
   <noscript>This app requires JavaScript.</noscript>
   <div id="root"></div>
 
+  <!-- IMPORTANT: using Babel transformer to allow one-file DX on GitHub Pages -->
   <script type="text/babel" data-presets="env,react" src="./script.js"></script>
 </body>
 </html>
