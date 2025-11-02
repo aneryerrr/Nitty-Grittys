@@ -1,49 +1,37 @@
 html,body,#root{height:100%}
 
-/* Hero left panel image + gradient */
 .hero{
-  background-image: url('./hero.jpg'), radial-gradient(1200px 800px at 20% 20%, #1e3a8a 0%, #020617 60%);
+  background-image: url('./hero.jpg'),
+    radial-gradient(1200px 800px at 20% 20%, #1e3a8a 0%, #020617 60%);
   background-size: cover;
   background-position: center;
 }
 
-/* Thin scrollbar */
 .scroll-smooth::-webkit-scrollbar{height:8px;width:8px}
 .scroll-smooth::-webkit-scrollbar-thumb{background:#334155;border-radius:8px}
 
-/* Import overlay */
-.import-overlay{
-  position: fixed; inset: 0;
-  display:flex; align-items:center; justify-content:center;
-  background: rgba(0,0,0,.6); z-index: 60;
+/* Simple glow card for Notes’ trade references */
+.glow-card{
+  position: relative;
+  border-radius: 14px;
+  padding: 10px 12px;
+  background: rgba(2,6,23,0.75);
+  border: 1px solid #1f2a44;
+  overflow: hidden;
 }
-.import-card{
-  width: min(92vw, 560px);
-  background: rgba(15,23,42,.95);
-  border: 1px solid #334155;
-  border-radius: 16px;
-  padding: 20px;
-  box-shadow: 0 10px 40px rgba(0,0,0,.4);
-}
-.progress{
-  height:10px; width:100%;
-  background:#0f172a; border:1px solid #334155; border-radius:10px; overflow:hidden;
-}
-.progress>div{
-  height:100%; width:0%;
-  background: linear-gradient(90deg, #60a5fa, #22d3ee);
-}
-
-/* Little futuristic chip used in Notes */
-.trade-chip{
-  display:inline-flex; gap:8px; align-items:center;
-  padding:6px 10px; border-radius:12px;
-  background: linear-gradient(135deg, rgba(34,197,94,.15), rgba(59,130,246,.15));
-  border: 1px solid rgba(148,163,184,.25);
-  font-size:12px; color:#cbd5e1;
+.glow-card:before{
+  content:"";
+  position:absolute; inset:-1px;
+  border-radius: 14px;
+  background: conic-gradient(
+    from 180deg at 50% 50%,
+    rgba(56,189,248,.25), rgba(59,130,246,.25), rgba(147,51,234,.25), rgba(56,189,248,.25)
+  );
+  filter: blur(18px);
+  opacity:.35;
+  z-index:-1;
 }
 
-/* Tailwind placeholders (kept for completeness with CDN flow) */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Import modal progress bar */
+.progress-wrap{height:10px;border-radius:9999px;background:#0b1220;border:1px solid #24304d}
+.progress-bar{height:100%;border-radius:9999px;background:#2563eb}
