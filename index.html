@@ -6,20 +6,16 @@
   <title>Nitty Gritty</title>
   <link rel="icon" href="./logo-ng.png" type="image/png">
   <link rel="stylesheet" href="./styles.css" />
-
   <!-- Tailwind (CDN) -->
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Google Identity (kept for optional Google sign-in) -->
-  <meta name="google-signin-client_id" content="579461879935-qaj9nta2pfbrn17ss5idu2k39p4joir4.apps.googleusercontent.com" />
+  <!-- Google Identity Services -->
   <script>
     window.GOOGLE_CLIENT_ID = "579461879935-qaj9nta2pfbrn17ss5idu2k39p4joir4.apps.googleusercontent.com";
-    // Cloudflare Workers API base (you will deploy the Worker under /api/* on nittygritty.online)
-    window.CLOUDFLARE_API_BASE = "https://nittygritty.online/api";
+    // Cloudflare Worker API base (adjust if you deploy under a different subpath)
+    window.RESET_API_BASE = "https://nittygritty.online/api";
   </script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-
-  <!-- React + ReactDOM + Babel (for JSX in-browser) -->
+  <!-- React + ReactDOM + Babel (for JSX) -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
