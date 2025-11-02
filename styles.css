@@ -6,6 +6,13 @@ html,body,#root{height:100%}
 }
 .scroll-smooth::-webkit-scrollbar{height:8px;width:8px}
 .scroll-smooth::-webkit-scrollbar-thumb{background:#334155;border-radius:8px}
+
+/* Tailwind (CDN) utilities */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* tiny helper for clamped preview text if Tailwind line-clamp plugin isn't present */
+.line-clamp-4{
+  display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;
+}
