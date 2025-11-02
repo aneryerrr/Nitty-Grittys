@@ -6,6 +6,16 @@ html,body,#root{height:100%}
 }
 .scroll-smooth::-webkit-scrollbar{height:8px;width:8px}
 .scroll-smooth::-webkit-scrollbar-thumb{background:#334155;border-radius:8px}
+.progress-circle {
+  background: conic-gradient(#3b82f6 0deg var(--progress), #334155 var(--progress) 360deg);
+  border-radius: 50%;
+  height: 80px;
+  width: 80px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
