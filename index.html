@@ -6,16 +6,21 @@
   <title>Nitty Gritty</title>
   <link rel="icon" href="./logo-ng.png" type="image/png">
   <link rel="stylesheet" href="./styles.css" />
-  <!-- Tailwind (CDN) -->
+
+  <!-- Tailwind CDN (fine for dev; build for prod per warning) -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Identity Services -->
+
+  <!-- Google Sign-In (unchanged) -->
   <script>
     window.GOOGLE_CLIENT_ID = "579461879935-qaj9nta2pfbrn17ss5idu2k39p4joir4.apps.googleusercontent.com";
-    // Cloudflare Worker API base (adjust if you deploy under a different subpath)
-    window.RESET_API_BASE = "https://nittygritty.online/api";
+    // Optional: set your Cloudflare Worker endpoint that sends reset emails
+    // Example: "https://reset.nittygritty.online/send"
+    window.CF_RESET_ENDPOINT = "/api/send-reset"; 
+    // If you mount the Worker on a subdomain, put the full URL above.
   </script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <!-- React + ReactDOM + Babel (for JSX) -->
+
+  <!-- React + ReactDOM + Babel for JSX-in-browser -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
