@@ -49,6 +49,7 @@ function legPnL(symbol,side,entry,exit,lot,accType){
   return raw*s;
 }
 function computeDollarPnL(t,accType){
+  if(t.importedPnL !== undefined) return t.importedPnL;
   if(t.exitType === "Trade In Progress") return null;
   if(typeof t.exit==="number"&&(!t.exitType||t.exitType==="TP")) return legPnL(t.symbol,t.side,t.entry,t.exit,t.lotSize,accType);
   const has=v=>typeof v==="number"&&isFinite(v);const{entry,sl,tp1,tp2,lotSize:lot}=t;
@@ -96,13 +97,14 @@ function Modal({title,children,onClose,maxClass}){
   )
 }
 
-function SettingsPanel({name,setName,accType,setAccType,capital,setCapital,depositDate,setDepositDate,email,customSymbols,setCustomSymbols,customStrategies,setCustomStrategies}){
+function SettingsPanel({name,setName,accType,setAccType,capital,setCapital,depositDate,setDepositDate,email,customSymbols,setCustomSymbols,customStrategies,setCustomStrategies,dashboardWidgets,setDashboardWidgets}){
   const [tab,setTab]=useState("account"); const [pw1,setPw1]=useState(""); const [pw2,setPw2]=useState(""); const [msg,setMsg]=useState("");
   const [newSymbol,setNewSymbol]=useState(""); const [newStrategy,setNewStrategy]=useState("");
   const addSymbol=()=>{if(newSymbol){setCustomSymbols([...customSymbols,newSymbol]);setNewSymbol("")}}
   const removeSymbol=(s)=>setCustomSymbols(customSymbols.filter(x=>x!==s));
   const addStrategy=()=>{if(newStrategy){setCustomStrategies([...customStrategies,newStrategy]);setNewStrategy("")}}
   const removeStrategy=(s)=>setCustomStrategies(customStrategies.filter(x=>x!==s));
+  const toggleWidget=(w)=>setDashboardWidgets(prev=>prev.includes(w)?prev.filter(x=>x!==w):[...prev,w]);
   const savePw=()=>{ if(!pw1||pw1.length<6){setMsg("Password must be at least 6 characters.");return}
     if(pw1!==pw2){setMsg("Passwords do not match.");return}
     const users=loadUsers();const i=users.findIndex(u=>u.email.toLowerCase()===(email||"").toLowerCase());
@@ -111,7 +113,7 @@ function SettingsPanel({name,setName,accType,setAccType,capital,setCapital,depos
   return(
     <div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-6">
       <div className="flex items-center gap-2 mb-4"><IconSettings/><div className="font-semibold">Settings</div></div>
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-2 mb-4 flex-wrap">
         <button onClick={()=>setTab("account")} className={`px-3 py-1.5 rounded-lg border ${tab==="account"?"bg-slate-700 border-slate-600":"border-slate-700"}`}>Account Setup</button>
         <button onClick={()=>setTab("security")} className={`px-3 py-1.5 rounded-lg border ${tab==="security"?"bg-slate-700 border-slate-600":"border-slate-700"}`}>Privacy & Security</button>
         <button onClick={()=>setTab("customize")} className={`px-3 py-1.5 rounded-lg border ${tab==="customize"?"bg-slate-700 border-slate-600":"border-slate-700"}`}>Customize Journal</button>
@@ -133,31 +135,39 @@ function SettingsPanel({name,setName,accType,setAccType,capital,setCapital,depos
           <div className="text-right"><button onClick={savePw} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500">Update Password</button></div>
         </div>
       ):(
-        <div className="space-y-6">
-          <div>
-            <div className="text-sm font-semibold mb-2">Symbols</div>
-            <div className="space-y-2 mb-3">{customSymbols.map(s=>(
-              <div key={s} className="flex items-center justify-between bg-slate-900/50 p-2 rounded-lg">
+        <div className="space-y-8">
+          <div className="bg-slate-900/50 p-4 rounded-xl">
+            <div className="text-sm font-semibold mb-3">Symbols</div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4">{customSymbols.map(s=>(
+              <div key={s} className="flex items-center justify-between bg-slate-800 p-2 rounded-lg border border-slate-700">
                 <div>{s}</div>
-                <button onClick={()=>removeSymbol(s)} className="text-red-400">Remove</button>
+                <button onClick={()=>removeSymbol(s)} className="text-red-400 text-xs">×</button>
               </div>
             ))}</div>
             <div className="flex gap-2">
-              <input value={newSymbol} onChange={e=>setNewSymbol(e.target.value)} className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/>
-              <button onClick={addSymbol} className="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500">Add</button>
+              <input value={newSymbol} onChange={e=>setNewSymbol(e.target.value)} placeholder="New symbol" className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/>
+              <button onClick={addSymbol} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-sm">Add</button>
             </div>
           </div>
-          <div>
-            <div className="text-sm font-semibold mb-2">Strategies</div>
-            <div className="space-y-2 mb-3">{customStrategies.map(s=>(
-              <div key={s} className="flex items-center justify-between bg-slate-900/50 p-2 rounded-lg">
+          <div className="bg-slate-900/50 p-4 rounded-xl">
+            <div className="text-sm font-semibold mb-3">Strategies</div>
+            <div className="space-y-2 mb-4">{customStrategies.map(s=>(
+              <div key={s} className="flex items-center justify-between bg-slate-800 p-2 rounded-lg border border-slate-700">
                 <div>{s}</div>
-                <button onClick={()=>removeStrategy(s)} className="text-red-400">Remove</button>
+                <button onClick={()=>removeStrategy(s)} className="text-red-400 text-xs">×</button>
               </div>
             ))}</div>
             <div className="flex gap-2">
-              <input value={newStrategy} onChange={e=>setNewStrategy(e.target.value)} className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/>
-              <button onClick={addStrategy} className="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500">Add</button>
+              <input value={newStrategy} onChange={e=>setNewStrategy(e.target.value)} placeholder="New strategy" className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/>
+              <button onClick={addStrategy} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-sm">Add</button>
+            </div>
+          </div>
+          <div className="bg-slate-900/50 p-4 rounded-xl">
+            <div className="text-sm font-semibold mb-3">Dashboard Widgets</div>
+            <div className="space-y-2">
+              <label className="flex items-center gap-2"><input type="checkbox" checked={dashboardWidgets.includes('general')} onChange={()=>toggleWidget('general')} className="form-checkbox"/> General Statistics</label>
+              <label className="flex items-center gap-2"><input type="checkbox" checked={dashboardWidgets.includes('strategy')} onChange={()=>toggleWidget('strategy')} className="form-checkbox"/> Best Strategy</label>
+              <label className="flex items-center gap-2"><input type="checkbox" checked={dashboardWidgets.includes('detailed')} onChange={()=>toggleWidget('detailed')} className="form-checkbox"/> Detailed Statistics</label>
             </div>
           </div>
         </div>
@@ -266,21 +276,19 @@ function CalendarModal({onClose,trades,view,setView,month,setMonth,year,setYear,
   )
 }
 
-function NotesPanel({notes,setNotes,trades}){
-  const [selectedDate,setSelectedDate]=useState(todayISO()); const [text,setText]=useState(""); const [images,setImages]=useState([]); const [tradeIds,setTradeIds]=useState([]);
-  const [editId,setEditId]=useState(null);
+function NotesPanel({notes,setNotes,trades,accType}){
+  const [selectedDate,setSelectedDate]=useState(todayISO()); const [text,setText]=useState(""); const [tradeIds,setTradeIds]=useState([]);
+  const [editId,setEditId]=useState(null); const [expanded,setExpanded]=useState(null);
   const byDate=useMemo(()=>{const m={};for(const n of notes){m[n.date]=m[n.date]||[];m[n.date].push(n)}return m},[notes]);
-  const addOrUpdateNote=()=>{const id=editId||Math.random().toString(36).slice(2); const arr=notes.slice(); const idx=arr.findIndex(n=>n.id===id); const rec={id,date:selectedDate,text,images,tradeIds}; if(idx>=0)arr[idx]=rec; else arr.push(rec); setNotes(arr); setText(""); setImages([]); setTradeIds([]); setEditId(null)}
+  const addOrUpdateNote=()=>{const id=editId||Math.random().toString(36).slice(2); const arr=notes.slice(); const idx=arr.findIndex(n=>n.id===id); const rec={id,date:selectedDate,text,tradeIds}; if(idx>=0)arr[idx]=rec; else arr.push(rec); setNotes(arr); setText(""); setTradeIds([]); setEditId(null)}
   const delNote=(id)=>setNotes(notes.filter(n=>n.id!==id));
-  const handleImage=(e)=>{const files=Array.from(e.target.files); files.forEach(f=>{const r=new FileReader(); r.onload=ev=>setImages(prev=>[...prev,ev.target.result]); r.readAsDataURL(f)})}
-  const editNote=(n)=>{setSelectedDate(n.date); setText(n.text); setImages(n.images); setTradeIds(n.tradeIds||[]); setEditId(n.id)}
+  const editNote=(n)=>{setText(n.text); setTradeIds(n.tradeIds||[]); setEditId(n.id)}
+  const getTradeInfo=(id)=>{const t=trades.find(tr=>tr.id===id); if(!t) return null; const pnl=computeDollarPnL(t,accType); const status = t.exitType && t.exitType !== "Trade In Progress" ? 'CLOSED' : 'OPEN'; return {strategy:t.strategy, pnl:formatPnlDisplay(accType,pnl), status}}
   return(<div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-6">
     <div className="flex items-center gap-2 mb-4"><IconNotes/><div className="font-semibold">Notes</div></div>
     <div className="space-y-4">
       <div><label className="text-sm text-slate-300">Date</label><input type="date" value={selectedDate} onChange={e=>setSelectedDate(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
       <div><label className="text-sm text-slate-300">Note</label><textarea value={text} onChange={e=>setText(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 h-24"/></div>
-      <div><label className="text-sm text-slate-300">Images</label><input type="file" multiple accept="image/*" onChange={handleImage} className="w-full mt-1"/></div>
-      {images.length>0&&<div className="flex gap-2">{images.map((img,i)=>(<img key={i} src={img} className="h-20 w-20 object-cover rounded"/>))}</div>}
       <div><label className="text-sm text-slate-300">Link to Trades</label><select multiple value={tradeIds} onChange={e=>setTradeIds(Array.from(e.target.selectedOptions,o=>o.value))} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">
         {trades.map(t=><option key={t.id} value={t.id}>{`${t.date} ${t.symbol} ${t.side}`}</option>)}
       </select></div>
@@ -288,14 +296,22 @@ function NotesPanel({notes,setNotes,trades}){
       <div className="mt-6">
         <div className="text-sm font-semibold mb-2">Notes for {selectedDate}</div>
         <div className="space-y-3">{(byDate[selectedDate]||[]).map(n=>(
-          <div key={n.id} className="bg-slate-900/50 border border-slate-700 rounded-xl p-3">
-            <div className="text-sm mb-2">{n.text}</div>
-            {n.images.length>0&&<div className="flex gap-2 mb-2">{n.images.map((img,i)=>(<img key={i} src={img} className="h-16 w-16 object-cover rounded"/>))}</div>}
-            {n.tradeIds&&n.tradeIds.length>0&&<div className="text-xs text-slate-400">Linked trades: {n.tradeIds.join(", ")}</div>}
-            <div className="flex gap-2 mt-2">
-              <button onClick={()=>editNote(n)} className="text-blue-400">Edit</button>
-              <button onClick={()=>delNote(n.id)} className="text-red-400">Delete</button>
-            </div>
+          <div key={n.id} className="bg-slate-900/50 border border-slate-700 rounded-xl p-3 cursor-pointer" onClick={()=>setExpanded(prev=>prev===n.id?null:n.id)}>
+            <div className="text-sm font-medium mb-1">{n.text.substring(0,50)}{n.text.length>50?'...':''}</div>
+            <div className="text-xs text-slate-400">Linked trades: {n.tradeIds?.length || 0}</div>
+            {expanded===n.id&&(
+              <div className="mt-3">
+                <div className="text-sm mb-2">{n.text}</div>
+                {n.tradeIds&&n.tradeIds.map(tid=>{
+                  const info=getTradeInfo(tid); if(!info) return null;
+                  return <div key={tid} className="text-xs text-slate-300">Trade {tid}: {info.strategy} - {info.pnl} - {info.status}</div>
+                })}
+                <div className="flex gap-2 mt-3">
+                  <button onClick={(e)=>{e.stopPropagation();editNote(n)}} className="text-blue-400 text-sm">Edit</button>
+                  <button onClick={(e)=>{e.stopPropagation();delNote(n.id)}} className="text-red-400 text-sm">Delete</button>
+                </div>
+              </div>
+            )}
           </div>
         ))}</div>
       </div>
@@ -304,7 +320,7 @@ function NotesPanel({notes,setNotes,trades}){
 }
 
 function usePersisted(email){
-  const fresh = () => ({name:"",email:email||"",accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[],notes:[],lastLotSize:0.01,customSymbols:DEFAULT_SYMBOLS,customStrategies:DEFAULT_STRATEGIES});
+  const fresh = () => ({name:"",email:email||"",accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[],notes:[],lastLotSize:0.01,customSymbols:DEFAULT_SYMBOLS,customStrategies:DEFAULT_STRATEGIES,dashboardWidgets:['general','strategy','detailed']});
   const [state,setState]=useState(()=>{const s=loadState(email||getCurrent());return s||fresh()});
   useEffect(()=>{
     const loaded = loadState(email);
@@ -351,10 +367,16 @@ function StrategyWinRate({trades,accType,customStrategies}){
     return Object.entries(m).map(([s,{wins,losses}])=>({strategy:s,winRate:(wins+losses)>0?Math.round((wins/(wins+losses))*100):0})).sort((a,b)=>b.winRate-a.winRate)
   },[trades,accType,customStrategies]);
   const best=stats[0];
+  if(best.winRate===0) return null;
   return(<div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4">
     <div className="text-sm font-semibold mb-2">Best Strategy</div>
-    <div className="text-lg">{best.strategy}: {best.winRate}% win rate</div>
-    <div className="mt-2 bg-slate-900/50 rounded-full h-2"><div className="bg-blue-600 h-2 rounded-full" style={{width:`${best.winRate}%`}}></div></div>
+    <div className="flex items-center gap-4">
+      <div className="relative">
+        <div className="progress-circle" style={{'--progress': `${best.winRate * 3.6}deg`}}></div>
+        <div className="absolute inset-0 flex items-center justify-center text-xl font-bold">{best.winRate}%</div>
+      </div>
+      <div className="text-lg">{best.strategy}</div>
+    </div>
   </div>)
 }
 
@@ -375,7 +397,7 @@ function Histories({trades,accType,onEdit,onDelete,notes}){
   return(<div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4">
     <div className="flex items-center justify-between mb-2"><div className="text-sm font-semibold">Trade History</div></div>
     <div className="overflow-auto"><table className="min-w-full text-sm">
-      <thead><tr><Th>Date</Th><Th>Symbol</Th><Th>Side</Th><Th>Lot size</Th><Th>Entry</Th><Th>Exit</Th><Th>TP1</Th><Th>TP2</Th><Th>SL</Th><Th>Exit Type</Th><Th>P&L</Th><Th>P&L (Units)</Th><Th>Status</Th><Th>Notes</Th><Th>Actions</Th></tr></thead>
+      <thead><tr><Th>Date</Th><Th>Symbol</Th><Th>Side</Th><Th>Lot size</Th><Th>Entry</Th><Th>Exit</Th><Th>TP1</Th><Th>TP2</Th><Th>SL</Th><Th>Exit Type</Th><Th>P&L</Th><Th>P&L (Units)</Th><Th>Outcome</Th><Th>Notes</Th><Th>Status</Th><Th>Actions</Th></tr></thead>
       <tbody>{trades.map(t=>{const v=computeDollarPnL(t,accType);const closed= t.exitType && t.exitType !== "Trade In Progress";const ln=linkedNotes[t.id]||[];return(<tr key={t.id} className="border-t border-slate-700">
         <Td>{t.date}</Td><Td>{t.symbol}</Td><Td>{t.side}</Td><Td>{t.lotSize}</Td>
         <Td>{typeof t.entry==='number'?t.entry:''}</Td><Td>{typeof t.exit==='number'?t.exit:''}</Td>
@@ -383,8 +405,9 @@ function Histories({trades,accType,onEdit,onDelete,notes}){
         <Td>{t.exitType||""}</Td>
         <Td className={v>0?'text-green-400':v<0?'text-red-400':''}>{v===null?'-':formatPnlDisplay(accType,v)}</Td>
         <Td className={v>0?'text-green-400':v<0?'text-red-400':''}>{v===null?'-':formatUnits(accType,v)}</Td>
+        <Td>{t.outcome||''}</Td>
+        <Td>{t.notes||''}</Td>
         <Td>{closed?'CLOSED':'OPEN'}</Td>
-        <Td>{ln.length>0?`(${ln.length} notes)`:''}</Td>
         <Td><div className="flex gap-2">
           <button onClick={()=>onEdit(t)} className="px-2 py-1 rounded-lg border border-slate-700 hover:bg-slate-700">✎</button>
           <button onClick={()=>onDelete(t.id)} className="px-2 py-1 rounded-lg border border-red-700 text-red-300 hover:bg-red-900/20">✕</button>
@@ -471,15 +494,19 @@ function ResetModal({email,onClose,onReset}){
   const start=async ()=>{const users=loadUsers();const u=users.find(x=>x.email.toLowerCase()===e.toLowerCase());if(!u){setMsg("No account for that email.");return}
     const token=Math.random().toString(36).slice(2); const exp=Date.now()+1000*60*15; localStorage.setItem("ng_reset_"+token,JSON.stringify({email:e,exp}));
     const url=location.origin+location.pathname+"#reset="+token; setLink(url); 
-    const first_name = u.name.split(' ')[0];
-    const reset_link = url;
-    const expiry_time = "15 minutes";
-    const templateParams = { to_email: e, first_name, reset_link, expiry_time };
     try {
-      await emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams);
-      setMsg('Reset email sent successfully.');
+      const res = await fetch('https://nittygritty.online/api/reset', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({to_email: e, first_name: u.name.split(' ')[0], reset_link: url, expiry_time: "15 minutes"})
+      });
+      if(res.ok){
+        setMsg('Reset email sent successfully.');
+      } else {
+        setMsg('Failed to send email.');
+      }
     } catch (error) {
-      setMsg('Failed to send email: ' + error.text);
+      setMsg('Failed to send email: ' + error.message);
     }
   }
   return(<Modal title="Password reset" onClose={onClose} maxClass="max-w-md">
@@ -515,13 +542,11 @@ function App(){
   const [state,setState]=usePersisted(currentEmail);
   const [page,setPage]=useState("dashboard");
   const [showTrade,setShowTrade]=useState(false); const [editItem,setEditItem]=useState(null);
-  const [showAcct,setShowAcct]=useState(false);
   const [showCal,setShowCal]=useState(false); const now=new Date(); const [calView,setCalView]=useState("month"); const [calMonth,setCalMonth]=useState(now.getMonth()); const [calYear,setCalYear]=useState(now.getFullYear()); const [calSel,setCalSel]=useState(todayISO());
   const [collapsed,setCollapsed]=useState(false);
   const [showReset,setShowReset]=useState(false); const [resetToken,setResetToken]=useState("");
 
   useEffect(()=>{const hash=new URLSearchParams(location.hash.slice(1));const tok=hash.get("reset"); if(tok){setResetToken(tok)}},[]);
-  useEffect(()=>{if(state&&(!state.name||!state.depositDate)) setShowAcct(true)},[state?.email]);
   useEffect(()=>{if(typeof emailjs !== 'undefined'){emailjs.init({publicKey: "YOUR_EMAILJS_PUBLIC_KEY"});}},[]); // Initialize EmailJS
 
   const openTrades=state.trades.filter(t=> !t.exitType || t.exitType === "Trade In Progress").length;
@@ -533,17 +558,18 @@ function App(){
   const onImport = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    alert("Please wait, the import will be successful in a few minutes depending on the file size.");
     const reader = new FileReader();
     reader.onload = (ev) => {
       let text = ev.target.result;
       if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1); // remove BOM
       const lines = text.split(/\r?\n/);
       if (lines.length < 1) return;
-      const headers = lines[0].split(/,(?=(?=(?:[^"]*"{2})*[^"]*$))/);
+      const headers = lines[0].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
       const newTrades = [];
       for (let i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue;
-        const data = lines[i].split(/,(?=(?=(?:[^"]*"{2})*[^"]*$))/);
+        const data = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
         const t = {};
         headers.forEach((h, j) => {
           let v = data[j];
@@ -566,12 +592,14 @@ function App(){
             case 'Exit Type': t.exitType = v; break;
             case 'TP1 Exit': if (!t.tp1) t.tp1 = v; break;
             case 'TP2 Exit': if (!t.tp2) t.tp2 = v; break;
-            // ignore P&L ($), P&L (Units), Outcome, Notes, Current Capital
+            case 'P&L ($)': t.importedPnL = v; break;
+            case 'P&L (Units)': t.importedPnLUnits = v; break;
+            case 'Outcome': t.outcome = v; break;
+            case 'Notes': t.notes = v; break;
           }
         });
         if (t.date && t.symbol) {
-          t.id = Math.random().toString(36).slice(2);
-          newTrades.push(t);
+          newTrades.push({ ...t, id: Math.random().toString(36).slice(2) });
         }
       }
       setState({ ...state, trades: [...state.trades, ...newTrades] });
@@ -589,7 +617,7 @@ function App(){
   };
 
   const login=(email,password,setErr)=>{const u=users.find(x=>x.email.toLowerCase()===email.toLowerCase());
-    if(!u){ if(password==="__google__"){const nu=[...users,{name:email.split("@")[0],email,password:""}]; setUsers(nu); saveUsers(nu); const fresh={name:email.split("@")[0],email,accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[],notes:[],lastLotSize:0.01,customSymbols:DEFAULT_SYMBOLS,customStrategies:DEFAULT_STRATEGIES}; saveState(email,fresh); saveCurrent(email); setCurrentEmail(email); return;}
+    if(!u){ if(password==="__google__"){const nu=[...users,{name:email.split("@")[0],email,password:""}]; setUsers(nu); saveUsers(nu); const fresh={name:email.split("@")[0],email,accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[],notes:[],lastLotSize:0.01,customSymbols:DEFAULT_SYMBOLS,customStrategies:DEFAULT_STRATEGIES,dashboardWidgets:['general','strategy','detailed']}; saveState(email,fresh); saveCurrent(email); setCurrentEmail(email); return;}
       setErr("No such user. Please sign up."); return;}
     if(password!=="__google__" && u.password!==password){setErr("Wrong password.");return}
     setErr(""); saveCurrent(u.email); setCurrentEmail(u.email);
@@ -597,7 +625,7 @@ function App(){
 
   const signup=(name,email,password,setErr)=>{if(users.some(x=>x.email.toLowerCase()===email.toLowerCase())){setErr("Email already registered.");return}
     const u={name,email,password}; const nu=[...users,u]; setUsers(nu); saveUsers(nu);
-    const fresh={name,email,accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[],notes:[],lastLotSize:0.01,customSymbols:DEFAULT_SYMBOLS,customStrategies:DEFAULT_STRATEGIES}; saveState(email,fresh); saveCurrent(email); setCurrentEmail(email);
+    const fresh={name,email,accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[],notes:[],lastLotSize:0.01,customSymbols:DEFAULT_SYMBOLS,customStrategies:DEFAULT_STRATEGIES,dashboardWidgets:['general','strategy','detailed']}; saveState(email,fresh); saveCurrent(email); setCurrentEmail(email);
   };
 
   const resetStart=(emailGuess)=>{setShowReset(true)};
@@ -631,13 +659,13 @@ function App(){
   return(<AppShell capitalPanel={capitalPanel} nav={nav} logoSrc={logoSrc} onToggleSidebar={()=>setCollapsed(v=>!v)} onExport={onExport} onLogout={onLogout} onImport={onImport} sidebarCollapsed={collapsed}>
     {page==="dashboard"&&(<div className="space-y-4">
       <div className="text-sm font-semibold">General statistics</div>
-      <GeneralStats trades={state.trades} accType={state.accType} capital={state.capital} depositDate={state.depositDate}/>
-      <StrategyWinRate trades={state.trades} accType={state.accType} customStrategies={state.customStrategies}/>
-      <DetailedStats trades={state.trades} accType={state.accType}/>
+      {state.dashboardWidgets.includes('general') && <GeneralStats trades={state.trades} accType={state.accType} capital={state.capital} depositDate={state.depositDate}/>}
+      {state.dashboardWidgets.includes('strategy') && <StrategyWinRate trades={state.trades} accType={state.accType} customStrategies={state.customStrategies}/>}
+      {state.dashboardWidgets.includes('detailed') && <DetailedStats trades={state.trades} accType={state.accType}/>}
     </div>)}
     {page==="histories"&&(<Histories trades={state.trades} accType={state.accType} onEdit={t=>{setEditItem(t);setShowTrade(true)}} onDelete={delTrade} notes={state.notes}/>)}
-    {page==="notes"&&(<NotesPanel notes={state.notes} setNotes={notes=>setState({...state,notes})} trades={state.trades}/>)}
-    {page==="settings"&&(<SettingsPanel name={state.name} setName={v=>setState({...state,name:v})} accType={state.accType} setAccType={v=>setState({...state,accType:v})} capital={state.capital} setCapital={v=>setState({...state,capital:v||0})} depositDate={state.depositDate} setDepositDate={v=>setState({...state,depositDate:v})} email={state.email} customSymbols={state.customSymbols} setCustomSymbols={v=>setState({...state,customSymbols:v})} customStrategies={state.customStrategies} setCustomStrategies={v=>setState({...state,customStrategies:v})}/>)}
+    {page==="notes"&&(<NotesPanel notes={state.notes} setNotes={notes=>setState({...state,notes})} trades={state.trades} accType={state.accType}/>)}
+    {page==="settings"&&(<SettingsPanel name={state.name} setName={v=>setState({...state,name:v})} accType={state.accType} setAccType={v=>setState({...state,accType:v})} capital={state.capital} setCapital={v=>setState({...state,capital:v||0})} depositDate={state.depositDate} setDepositDate={v=>setState({...state,depositDate:v})} email={state.email} customSymbols={state.customSymbols} setCustomSymbols={v=>setState({...state,customSymbols:v})} customStrategies={state.customStrategies} setCustomStrategies={v=>setState({...state,customStrategies:v})} dashboardWidgets={state.dashboardWidgets} setDashboardWidgets={v=>setState({...state,dashboardWidgets:v})}/>)}
 
     {showTrade&&(<TradeModal initial={editItem} onClose={()=>{setShowTrade(false);setEditItem(null)}} onSave={addOrUpdate} onDelete={delTrade} accType={state.accType} lastLotSize={state.lastLotSize} customSymbols={state.customSymbols} customStrategies={state.customStrategies}/>)}
     {showCal&&(<CalendarModal onClose={()=>setShowCal(false)} trades={state.trades} view={calView} setView={setCalView} month={calMonth} setMonth={setCalMonth} year={calYear} setYear={setCalYear} selectedDate={calSel} setSelectedDate={setCalSel} accType={state.accType}/>)}
