@@ -5,35 +5,96 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nitty Gritty</title>
 
-  <!-- hard cache-busting headers -->
+  <!-- Strong no-cache for the HTML document -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
 
-  <link rel="stylesheet" href="./styles.css?v=2025-11-05-02" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <!-- Preconnects for CDNs (faster first paints) -->
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+
+  <!-- Logo / Favicon -->
+  <link rel="icon" href="./logo-ng.png" type="image/png" />
 </head>
 <body class="bg-slate-950 text-slate-100">
   <div id="root"></div>
 
   <!-- Google Identity Services -->
   <script>
-    window.GOOGLE_CLIENT_ID = "579461879935-qaj9nta2pfbrn17ss5idu2k39p4joir4.apps.googleusercontent.com";
+    window.GOOGLE_CLIENT_ID =
+      "579461879935-qaj9nta2pfbrn17ss5idu2k39p4joir4.apps.googleusercontent.com";
   </script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
-  <!-- React -->
+  <!-- React + ReactDOM (static urls are OK; they rarely change) -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
-  <!-- CSV/XLS/XLSX support -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- Tailwind (CDN) -->
+  <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Babel (JSX in-browser) -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Build version for cache-busting (update this string on each deploy) -->
+  <script>
+    // CHANGE THIS on every deploy:
+    window.__NG_BUILD = "2025-11-05.07";
 
-  <!-- app -->
-  <script type="text/babel" data-presets="env,react" src="./script.js?v=2025-11-05-02"></script>
+    // Global safety shim so old bundles that reference `DetailedStats` don't crash.
+    // (If an older script still uses <DetailedStats/>, it will at least be defined.)
+    try {
+      if (typeof DetailedStats === "undefined") {
+        window.DetailedStats = function(){ return React.createElement("div"); };
+        // Make it a true global binding (not just window prop):
+        var DetailedStats = window.DetailedStats; // eslint-disable-line no-redeclare
+      }
+    } catch (e) {
+      // Fallback if strict mode interferes
+      window.DetailedStats = function(){ return React.createElement("div"); };
+    }
+
+    // Optional: clear any SW caches with "ng-" prefix (if a worker ever existed)
+    (async () => {
+      try {
+        if ("caches" in window) {
+          const keys = await caches.keys();
+          for (const k of keys) if (k.startsWith("ng-")) await caches.delete(k);
+        }
+      } catch (e) {}
+    })();
+  </script>
+
+  <!-- Bootstrap loader: inject CSS & App JS with a fresh ?v= param -->
+  <script>
+    (function bootstrap(){
+      const v = "?v=" + (window.__NG_BUILD || ("dev-" + Date.now()));
+
+      // inject stylesheet with version
+      const css = document.createElement("link");
+      css.rel = "stylesheet";
+      css.href = "./styles.css" + v;
+      document.head.appendChild(css);
+
+      // load Babel, then load app script (also versioned)
+      const loadBabel = () => new Promise((res, rej) => {
+        const s = document.createElement("script");
+        s.src = "https://unpkg.com/@babel/standalone/babel.min.js";
+        s.onload = res; s.onerror = rej;
+        document.body.appendChild(s);
+      });
+
+      loadBabel().then(() => {
+        const app = document.createElement("script");
+        app.type = "text/babel";
+        app.setAttribute("data-presets", "env,react");
+        app.src = "./script.js" + v;
+        document.body.appendChild(app);
+      }).catch(() => {
+        const msg = document.createElement("pre");
+        msg.style.color = "#f99";
+        msg.textContent = "Failed to load compiler. Check network.";
+        document.body.appendChild(msg);
+      });
+    })();
+  </script>
 </body>
 </html>
