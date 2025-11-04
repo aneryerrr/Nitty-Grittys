@@ -28,35 +28,32 @@
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
-  <!-- Tailwind CDN -->
+  <!-- Tailwind (CDN) -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- XLS/CSV import (kept lightweight; safe no-op if unused) -->
+  <!-- XLS/CSV import -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-  <!-- EmailJS (for Forgot Password, unchanged) -->
+  <!-- EmailJS (Forgot Password) -->
   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 
-  <!-- Deploy version: bump this on each release -->
-  <script>
-    window.__NG_BUILD = "2025-11-06.01";  /* ← bump this string when you push */
-  </script>
+  <!-- Bump this version each push to defeat caches -->
+  <script>window.__NG_BUILD = "2025-11-06.02";</script>
 
-  <!-- Babel standalone -->
+  <!-- Babel -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <!-- Robust bootstrap: fetch script.js, transpile with Babel, inject as JS -->
+  <!-- Bootstrap loader -->
   <script>
     (async function boot() {
       const v = "?v=" + (window.__NG_BUILD || ("dev-" + Date.now()));
 
-      // Load styles with version param (defeat CDN caches)
+      // CSS with version param
       const css = document.createElement("link");
-      css.rel = "stylesheet";
-      css.href = "./styles.css" + v;
+      css.rel = "stylesheet"; css.href = "./styles.css" + v;
       document.head.appendChild(css);
 
-      // Safety shim during CDN propagation
+      // Safety shim during propagation
       if (typeof window.DetailedStats === "undefined") {
         window.DetailedStats = function () { return React.createElement("div"); };
       }
