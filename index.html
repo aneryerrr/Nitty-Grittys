@@ -4,71 +4,56 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nitty Gritty</title>
-
   <!-- Strong no-cache for the HTML itself -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-
   <link rel="icon" href="./logo-ng.png" type="image/png" />
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 </head>
 <body class="bg-slate-950 text-slate-100">
   <div id="root"></div>
-
   <!-- Google Identity Services -->
   <script>
     window.GOOGLE_CLIENT_ID =
       "579461879935-qaj9nta2pfbrn17ss5idu2k39p4joir4.apps.googleusercontent.com";
   </script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-
   <!-- React + ReactDOM -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-
   <!-- Tailwind (CDN) -->
   <script src="https://cdn.tailwindcss.com"></script>
-
   <!-- XLS/CSV import -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-
   <!-- EmailJS (Forgot Password) -->
   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-
   <!-- Bump this version each push to defeat caches -->
   <script>window.__NG_BUILD = "2025-11-06.02";</script>
-
   <!-- Babel -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
   <!-- Bootstrap loader -->
   <script>
     (async function boot() {
       const v = "?v=" + (window.__NG_BUILD || ("dev-" + Date.now()));
-
       // CSS with version param
       const css = document.createElement("link");
       css.rel = "stylesheet"; css.href = "./styles.css" + v;
       document.head.appendChild(css);
-
       // Safety shim during propagation
       if (typeof window.DetailedStats === "undefined") {
         window.DetailedStats = function () { return React.createElement("div"); };
       }
-
       try {
         const res = await fetch("./script.js" + v, { cache: "no-store" });
         if (!res.ok) throw new Error("HTTP " + res.status);
         const src = await res.text();
         const out = Babel.transform(src, { presets: ["env", "react"] }).code;
-
         const s = document.createElement("script");
         s.type = "text/javascript";
         s.text = out;
         document.body.appendChild(s);
-
         try { localStorage.setItem("__NG_BUILD_LAST", String(window.__NG_BUILD||"dev")); } catch {}
       } catch (e) {
         const box = document.createElement("pre");
