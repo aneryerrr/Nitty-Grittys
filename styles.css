@@ -1,39 +1,46 @@
-/* Keep the app colors exactly as before; only login uses deep blue */
-:root { --deep-blue: #071738; }
+html,body,#root{height:100%}
 
-html, body, #root { height: 100%; }
-
-/* Login: both sides dark blue */
-.login-bg { background: var(--deep-blue); }
-.login-hero { background: var(--deep-blue); }
-
-/* Small helpers retained from before */
-.tag { padding: 2px 6px; border-radius: 8px; font-size: 12px; border: 1px solid #475569; }
-.card { position: relative; }
-.drag-handle { position: absolute; top: 8px; right: 8px; opacity:.6; cursor:move; padding:2px 4px; border:1px solid rgba(100,116,139,.6); border-radius:.5rem; background: rgba(15,23,42,.6); }
-
-/* Dashboard editor chips (smaller & friendlier) */
-.editor-chip {
-  display:flex; align-items:center; justify-content:space-between;
-  gap:.5rem; padding:.5rem .75rem; border:1px solid #334155;
-  background:#0b1324; border-radius:.75rem; font-size:.875rem;
+/* Darker blue login background on both sides */
+.login-bg{
+  background:
+    radial-gradient(1200px 800px at 20% 20%, #0b1b3b 0%, #020617 60%),
+    linear-gradient(180deg, #07122b 0%, #020617 100%);
 }
-.editor-chip .grip { cursor:move; opacity:.7; }
 
-/* Notes list styling */
-.note-row { border:1px solid #334155; background:#0a1222; border-radius:.75rem; padding:.75rem; }
-.note-row .meta { font-size:.75rem; color:#94a3b8; }
-.note-row .actions button { border:1px solid #334155; border-radius:.5rem; padding:.25rem .5rem; }
-.note-editor { min-height: 180px; border:1px solid #334155; background:#0b1220; padding:12px; border-radius:12px; overflow:auto; }
-
-/* Inputs/buttons look you already use */
-.input, .select, .btn {
-  background:#0b1220; border:1px solid #334155; color:#e2e8f0; border-radius:12px; padding:.5rem .75rem;
+/* Left hero stays image-first, but darker */
+.hero{
+  background-image: url('./hero.jpg'), radial-gradient(1200px 800px at 20% 20%, #0b1b3b 0%, #020617 60%);
+  background-size: cover;
+  background-position: center;
 }
-.btn { background:#0f172a; }
-.btn-primary { background:#2563eb; border-color:#1d4ed8; }
-.btn-outline { background:transparent; }
 
-/* Keep table look consistent */
-.table th { padding:.75rem 1rem; text-align:left; color:#cbd5e1; }
-.table td { padding:.75rem 1rem; vertical-align:top; }
+/* Thin modern scrollbar for wide tables/lists */
+.scroll-smooth::-webkit-scrollbar{height:8px;width:8px}
+.scroll-smooth::-webkit-scrollbar-thumb{background:#334155;border-radius:8px}
+
+/* Drag & drop helpers */
+.dash-draggable{ cursor: grab; }
+.dash-draggable:active{ cursor: grabbing; }
+.dash-dropzone{ outline: 2px dashed transparent; transition: outline-color .15s ease; }
+.dash-dropzone.drag-over{ outline-color: #334155; }
+
+/* Histories card list spacing */
+.row-card{
+  background: rgba(15,23,42,.65);
+  border: 1px solid #334155;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+}
+
+/* Notes list items look consistent width */
+.note-item{
+  background: rgba(15,23,42,.65);
+  border: 1px solid #334155;
+  border-radius: 0.75rem;
+  padding: .75rem 1rem;
+}
+
+/* Keep Tailwind layers available when using CDN */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
