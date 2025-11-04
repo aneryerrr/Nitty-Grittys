@@ -1,35 +1,43 @@
-html,body,#root{height:100%}
-.hero{
-  background-image: url('./hero.jpg'), radial-gradient(1200px 800px at 20% 20%, #1e3a8a 0%, #020617 60%);
-  background-size: cover;
-  background-position: center;
-}
-.scroll-smooth::-webkit-scrollbar{height:8px;width:8px}
-.scroll-smooth::-webkit-scrollbar-thumb{background:#334155;border-radius:8px}
+/* Global background for the whole site (and login both sides) */
+:root { --deep-blue: #0a1e42; }
+.bg-deep { background: var(--deep-blue); }
 
-/* dashboard drag cards */
-.dashboard-grid{
+/* Left hero panel (kept simple solid to match the right side) */
+.hero {
+  background: var(--deep-blue);
+}
+
+/* Layout helpers */
+html, body, #root { height: 100%; }
+.scroll-smooth::-webkit-scrollbar { height: 8px; width: 8px; }
+.scroll-smooth::-webkit-scrollbar-thumb { background: #334155; border-radius: 8px; }
+
+/* Dashboard cards + drag handle */
+.dashboard-grid {
+  display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
 }
-.card{ position:relative; }
-.drag-handle{
-  position:absolute; top:8px; right:8px; opacity:.6; cursor:move; padding:2px 4px;
-  border:1px solid rgba(100,116,139,.6); border-radius:.5rem; background:rgba(15,23,42,.6);
+.card { position: relative; }
+.drag-handle {
+  position: absolute; top: 8px; right: 8px;
+  opacity: .6; cursor: move; padding: 2px 4px;
+  border: 1px solid rgba(100,116,139,.6);
+  border-radius: .5rem; background: rgba(15,23,42,.6);
 }
 
-/* note editor */
-.toolbar-btn{
-  border:1px solid #334155; border-radius:.5rem; padding:.35rem .6rem; background:#0f172a; color:#e2e8f0;
+/* Notes toolbar + editor */
+.toolbar-btn, .toolbar-select {
+  border: 1px solid #334155; border-radius: .5rem;
+  background: #0f172a; color: #e2e8f0;
 }
-.toolbar-select{
-  border:1px solid #334155; border-radius:.5rem; padding:.3rem .5rem; background:#0f172a; color:#e2e8f0;
+.toolbar-btn { padding: .35rem .6rem; }
+.toolbar-select { padding: .3rem .5rem; }
+.note-editor {
+  min-height: 220px; border: 1px solid #334155;
+  background: #0b1220; padding: 12px; border-radius: 12px; overflow: auto;
 }
-.note-editor{
-  min-height:220px; border:1px solid #334155; background:#0b1220; padding:12px; border-radius:12px; overflow:auto;
-}
-.note-card{ min-height:180px; }
+.note-card { min-height: 180px; }
 
-/* Tailwind (keep at end so utilities compile) */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Small bits */
+.tag { padding: 2px 6px; border-radius: 8px; font-size: 12px; border: 1px solid #475569; }
