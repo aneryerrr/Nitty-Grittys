@@ -1,37 +1,17 @@
 html,body,#root{height:100%}
-
-/* hero */
 .hero{
+  /* unchanged hero background */
   background-image: url('./hero.jpg'),
-    radial-gradient(1200px 800px at 20% 20%, #0b1f4e 0%, #020617 60%);
+    radial-gradient(1200px 800px at 20% 20%, #1e3a8a 0%, #020617 60%);
   background-size: cover;
   background-position: center;
 }
 
-/* slim table row separators */
-.table-row-gap tr + tr { border-top: 1px solid rgba(51,65,85,.6); }
+.scroll-smooth::-webkit-scrollbar{height:8px;width:8px}
+.scroll-smooth::-webkit-scrollbar-thumb{background:#334155;border-radius:8px}
 
-/* strategy badges */
-.badge{border-radius:9999px;padding:2px 10px;font-size:12px;font-weight:600}
-.badge-green{color:#10b981;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.35)}
-.badge-red{color:#f87171;background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.35)}
-.badge-mustard{color:#eab308;background:rgba(234,179,8,.12);border:1px solid rgba(234,179,8,.35)}
+/* Gauge text anti-aliasing for Best Strategy */
+.svg-text { paint-order: stroke; stroke: rgba(2,6,23,.3); stroke-width: .6px }
 
-/* best strategy gauge */
-.gauge{width:260px;height:130px;border-bottom-left-radius:260px;border-bottom-right-radius:260px;
-  background:conic-gradient(var(--gauge-color) var(--gauge-val),rgba(100,116,139,.25) 0);
-  mask:radial-gradient(circle at 50% 100%,transparent 68px, black 69px);
-  border:1px solid rgba(51,65,85,.6)
-}
-
-/* Notes buttons – equal width, single line */
-.notes-btn{min-width:130px;display:flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}
-
-/* Notes preview consistent width */
-.note-card{width:100%}
-
-/* Notes editor content styles */
-.note-editor{min-height:180px;max-height:260px;overflow:auto}
-.note-editor h2{font-size:1.25rem;font-weight:700;margin:6px 0}
-.note-editor h3{font-size:1.05rem;font-weight:600;margin:4px 0}
-.note-editor p{margin:4px 0}
+/* Subtle table row separation (histories) without changing layout */
+.tr-row{border-top:1px solid rgba(51,65,85,.6)}
