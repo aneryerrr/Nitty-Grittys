@@ -160,7 +160,7 @@ function AccountSetupModal({name,setName,accType,setAccType,capital,setCapital,d
 function SettingsPanel({name,setName,accType,setAccType,capital,setCapital,depositDate,setDepositDate,email,cfg,setCfg}){
   const [tab,setTab]=useState("personal");
   const [pw1,setPw1]=useState(""); const [pw2,setPw2]=useState(""); const [msg,setMsg]=useState("");
-  const savePw=()=>{if(!pw1||pw1.length<6){setMsg("Password must be at least 6 characters.");return}
+  const savePw=()=>{ if(!pw1||pw1.length<6){setMsg("Password must be at least 6 characters.");return}
     if(pw1!==pw2){setMsg("Passwords do not match.");return}
     const users=loadUsers();const i=users.findIndex(u=>u.email.toLowerCase()===(email||"").toLowerCase());
     if(i>=0){users[i].password=pw1;saveUsers(users);setMsg("Password updated.");setPw1("");setPw2("")}
@@ -257,6 +257,9 @@ function TradeModal({initial,onClose,onSave,onDelete,accType,symbols,strategies}
         <div><label className="text-sm text-slate-300">Exit Price</label><input type="number" step="0.0001" value={exit} onChange={e=>setExit(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2" placeholder="Leave blank for OPEN"/></div>
         <div><label className="text-sm text-slate-300">TP 1</label><input type="number" step="0.0001" value={tp1} onChange={e=>setTp1(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
         <div><label className="text-sm text-slate-300">TP 2</label><input type="number" step="0.0001" value={tp2} onChange={e=>setTp2(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
+        <div><label className="text-sm text-slate-300">P&L Override ($)</label>
+          <input type="number" step="0.01" value={pnlOverride} onChange={e=>setPnlOverride(e.target.value)} className="w-48 mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2" placeholder="Optional"/>
+        </div>
         <div><label className="text-sm text-slate-300">Stop-Loss</label><input type="number" step="0.0001" value={sl} onChange={e=>setSl(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
         <div><label className="text-sm text-slate-300">Strategy</label>
           <select value={strategy} onChange={e=>setStrategy(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">
@@ -264,9 +267,6 @@ function TradeModal({initial,onClose,onSave,onDelete,accType,symbols,strategies}
           </select>
         </div>
         <div><label className="text-sm text-slate-300">Exit Type</label><select value={exitType} onChange={e=>setExitType(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">{EXIT_TYPES.map(s=><option key={s}>{s}</option>)}</select></div>
-        <div className="lg:col-span-2"><label className="text-sm text-slate-300">P&L Override ($)</label>
-          <input type="number" step="0.01" value={pnlOverride} onChange={e=>setPnlOverride(e.target.value)} className="w-48 mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2" placeholder="Optional"/>
-        </div>
       </div>
       <div className="mt-4 flex items-center justify-between">
         <div className="text-sm text-slate-300">P&L preview: <span className="font-semibold">{preview}</span></div>
@@ -399,7 +399,7 @@ function DetailedStats({trades,accType}){
   </div>)
 }
 /* ---------- Histories (unchanged) ---------- */
-function Histories({trades,accType,onEdit,onDelete}){
+function Histories({trades,accType,onEdit,onDelete,strategies}){
   return(
     <div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4">
       <div className="flex items-center justify-between mb-2"><div className="text-sm font-semibold">Trade History</div></div>
@@ -417,12 +417,14 @@ function Histories({trades,accType,onEdit,onDelete}){
               const v=computeDollarPnL(t,accType);
               const status = (t.exitType && t.exitType!=="Trade In Progress") ? "CLOSED" : "OPEN";
               const color = v===0? "text-amber-400" : v>0? "text-green-400" : v<0? "text-red-400":"";
+              const strat = strategies.find(s => s.name === t.strategy);
+              const stratColor = strat ? strat.color : "default";
               return (
                 <tr key={t.id} className="tr-row">
                   <Td>{t.date}</Td><Td>{t.symbol}</Td><Td>{t.side}</Td><Td>{t.lotSize}</Td>
                   <Td>{typeof t.entry==='number'?t.entry:''}</Td><Td>{typeof t.exit==='number'?t.exit:''}</Td>
                   <Td>{typeof t.tp1==='number'?t.tp1:''}</Td><Td>{typeof t.tp2==='number'?t.tp2:''}</Td><Td>{typeof t.sl==='number'?t.sl:''}</Td>
-                  <Td>{t.strategy||""}</Td><Td>{t.exitType||""}</Td>
+                  <Td className={STRAT_COLORS[stratColor] || ""}>{t.strategy||""}</Td><Td>{t.exitType||""}</Td>
                   <Td className={color}>{v===null?'-':formatPnlDisplay(accType,v)}</Td>
                   <Td className={color}>{v===null?'-':formatUnits(accType,v)}</Td>
                   <Td>{status}</Td>
@@ -453,7 +455,7 @@ function NotesPanel({trades}){
       <div className="flex items-center justify-between mb-2"><div className="flex items-center gap-2"><IconNote/><div className="text-sm font-semibold">Notes</div></div>
         <button onClick={()=>{setDraft(null);setShow(true)}} className="px-3 py-2 rounded-lg border border-slate-700 flex items-center gap-2"><IconNote/>New note</button>
       </div>
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="space-y-3">
         {items.map(n=>(
           <div key={n.id} className="bg-slate-900/50 border border-slate-700 rounded-xl p-3 flex flex-col">
             <div className="font-semibold mb-1 truncate">{n.title}</div>
@@ -679,7 +681,7 @@ function App(){
   const fileRef=useRef(null); // hidden file input for import
   useEffect(()=>{const hash=new URLSearchParams(location.hash.slice(1));const tok=hash.get("reset"); if(tok){setResetToken(tok)}},[]);
   useEffect(()=>{if(state&&(!state.name||!state.depositDate)) setShowAcct(true)},[state?.email]);
-  useEffect(()=>{if(typeof emailjs !== 'undefined'){emailjs.init({publicKey: "qQucnU6BE7h1zb5Ex"});;}},[]);
+  useEffect(()=>{if(typeof emailjs !== 'undefined'){emailjs.init({publicKey: "qQucnU6BE7h1zb5Ex"});}},[]);
   const onExport=()=>{const csv=toCSV(state.trades,state.accType);const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="Nitty_Gritty_Template_Export.csv";a.click();URL.revokeObjectURL(url)};
   // -------- Import restored (CSV / XLS / XLSX) --------
   const onImport=()=>{fileRef.current?.click()};
@@ -696,9 +698,9 @@ function App(){
     const reader=new FileReader();
     reader.onload=evt=>{
       try{
-        const wb=xlsx.read(evt.target.result,{type:'array'});
+        const wb=XLSX.read(evt.target.result,{type:'array'});
         const sheet=wb.Sheets[wb.SheetNames[0]];
-        const rows=xlsx.utils.sheet_to_json(sheet,{defval:""});
+        const rows=XLSX.utils.sheet_to_json(sheet,{defval:""});
         const lower=(o)=>Object.fromEntries(Object.keys(o).map(k=>[k.toLowerCase(),o[k]]));
         const norm=rows.map(r=>{
           const x=lower(r);
@@ -775,7 +777,7 @@ function App(){
           <DetailedStats trades={state.trades} accType={state.accType}/>
           <BestStrategy trades={state.trades} accType={state.accType} strategies={cfg.strategies}/>
         </div>)}
-        {page==="histories"&&(<Histories trades={state.trades} accType={state.accType} onEdit={t=>{setEditItem(t);setShowTrade(true)}} onDelete={delTrade}/>)}
+        {page==="histories"&&(<Histories trades={state.trades} accType={state.accType} onEdit={t=>{setEditItem(t);setShowTrade(true)}} onDelete={delTrade} strategies={cfg.strategies}/>)}
         {page==="notes"&&(<NotesPanel trades={state.trades}/>)}
         {page==="settings"&&(<SettingsPanel
           name={state.name} setName={v=>setState({...state,name:v})}
