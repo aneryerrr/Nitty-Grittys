@@ -1,3 +1,8 @@
+/* Cache/version guard (optional, harmless) */
+(() => {
+  try { localStorage.setItem("__NG_BUILD_LAST", String(window.__NG_BUILD||"dev")); } catch(e) {}
+})();
+
 /* global React, ReactDOM, XLSX */
 const { useState, useMemo, useEffect, useRef } = React;
 
