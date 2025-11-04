@@ -1,31 +1,59 @@
+<script type="text/babel">
+
+/* ===================== Utilities & Constants ===================== */
 const {useState,useMemo,useEffect,useRef} = React;
 
-/* ---------------- Icons ---------------- */
+const LOGO_PUBLIC="/logo-ng.png"; 
+const LOGO_FALLBACK="./logo-ng.png.png";
+
+const DEFAULT_SYMBOLS=["XAUUSD","US100","US30","EURUSD","BTCUSD","AUDCAD","USDCAD","USDJPY","GBPUSD"];
+const DEFAULT_STRATEGIES=[
+  "Trend Line Bounce",
+  "2 Touch Point Trend Line Break",
+  "3 / 3+ Touch Point Trend Line Break",
+  "Trend Line Break & Re-test",
+  "Trend Continuation"
+];
+const EXIT_TYPES=["TP","SL","TP1_BE","TP1_SL","BE","Trade In Progress"];
+const ACC_TYPES=["Cent Account","Dollar Account"];
+
+const STRAT_COLORS = {
+  none: "",
+  green: "text-green-400",
+  red: "text-red-400",
+  mustard: "text-amber-400"
+};
+const ORANGE_CLASS = "text-amber-400";
+
+/* glyphs */
 const iconCls="h-5 w-5";
 const IconUser=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Z"/><path d="M4 20a8 8 0 0 1 16 0Z"/></svg>);
 const IconLogout=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M9 21h4a4 4 0 0 0 4-4V7a4 4 0 0 0-4-4H9"/><path d="M16 12H3"/><path d="M7 8l-4 4 4 4"/></svg>);
 const IconDownload=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M12 3v10"/><path d="M8 11l4 4 4-4"/><path d="M5 21h14v-4H5Z"/></svg>);
-const IconUpload=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M12 21V11"/><path d="M8 13l4-4 4 4"/><path d="M5 3h14v4H5z"/></svg>);
+const IconUpload=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M12 21V11"/><path d="M8 13l4-4 4 4"/><path d="M5 21h14v-4H5Z"/></svg>);
 const IconCalendar=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M8 3v4M16 3v4"/><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/></svg>);
 const IconPlus=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M12 5v14M5 12h14"/></svg>);
 const IconHistory=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M12 8v5l3 3"/><path d="M12 3a9 9 0 1 0 9 9"/><path d="M21 3v6h-6"/></svg>);
-const IconSettings=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0  0 0 15 19.4a1.65 1.65 0  0 0-1 .6 1.65 1.65 0  0 0-.4 1V22a2 2 0  1 1-4 0v-.1a1.65 1.65 0  0 0-.4-1 1.65 1.65 0  0 0-1-.6 1.65 1.65 0  0 0-1.82.33l-.06.06a2 2 0  1 1-2.83-2.83l.06-.06A1.65 1.65 0  0 0 4.6 15a1.65 1.65 0  0 0-.6-1 1.65 1.65 0  0 0-1-.4H2a2 2 0  1 1 0-4h.1a1.65 1.65 0  0 0 1-.4 1.65 1.65 0  0 0 .6-1 1.65 1.65 0  0 0-.33-1.82l-.06-.06A2 2 0  1 1 6.24 2.9l.06.06A1.65 1.65 0  0 0 8 4.6a1.65 1.65 0  0 0 1-.6 1.65 1.65 0  0 0 .4-1V2a2 2 0  1 1 4 0v.1c0 .38.14.74.4 1 .26.26.62.4 1 .4.62 0 1.22-.25 1.64-.68l.06-.06A2 2 0  1 1 21.1 6.24l-.06.06c-.26.26-.4.62-.4 1s.14.74.4 1c.26.26.62.4 1 .4H22a2 2 0  1 1 0 4h-.1a1.65 1.65 0  0 0-1 .4 1.65 1.65 0  0 0-.6 1Z"/></svg>);
+const IconSettings=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0  1 1-2.83 2.83l-.06-.06A1.65 1.65 0  0 0 15 19.4a1.65 1.65 0  0 0-1 .6 1.65 1.65 0  0 0-.4 1V22a2 2 0  1 1-4 0v-.1a1.65 1.65 0  0 0-.4-1 1.65 1.65 0  0 0-1-.6 1.65 1.65 0  0 0-1.82.33l-.06.06a2 2 0  1 1-2.83-2.83l.06-.06A1.65 1.65 0  0 0 4.6 15a1.65 1.65 0  0 0-.6-1 1.65 1.65 0  0 0-1-.4H2a2 2 0  1 1 0-4h.1a1.65 1.65 0  0 0 1-.4 1.65 1.65 0  0 0 .6-1 1.65 1.65 0  0 0-.33-1.82l-.06-.06A2 2 0  1 1 6.24 2.9l.06.06A1.65 1.65 0  0 0 8 4.6a1.65 1.65 0  0 0 1-.6 1.65 1.65 0  0 0 .4-1V2a2 2 0  1 1 4 0v.1c0 .38.14.74.4 1 .26.26.62.4 1 .4.62 0 1.22-.25 1.64-.68l.06-.06A2 2 0  1 1 21.1 6.24l-.06.06c-.26.26-.4.62-.4 1s.14.74.4 1c.26.26.62.4 1 .4H22a2 2 0  1 1 0 4h-.1a1.65 1.65 0  0 0-1 .4 1.65 1.65 0  0 0-.6 1Z"/></svg>);
 const IconHome=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9v12h14V9"/></svg>);
-const IconNote=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M4 3h12l4 4v14H4z"/><path d="M16 3v5h5"/></svg>);
+const IconGrip=(p)=>(<svg viewBox="0 0 24 24" fill="currentColor" className={iconCls} {...p}><circle cx="6" cy="7" r="1"/><circle cx="12" cy="7" r="1"/><circle cx="18" cy="7" r="1"/><circle cx="6" cy="13" r="1"/><circle cx="12" cy="13" r="1"/><circle cx="18" cy="13" r="1"/></svg>);
+const IconNote=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} className={iconCls} {...p}><path d="M3 7a2 2 0 0 1 2-2h8l6 6v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M13 3v6h6"/></svg>);
 
-/* ---------------- Constants ---------------- */
-const LOGO_PUBLIC="/logo-ng.png"; const LOGO_FALLBACK="./logo-ng.png.png";
-const SYMBOLS=["XAUUSD","US100","US30","EURUSD","BTCUSD","AUDCAD","USDCAD","USDJPY","GBPUSD"];
-const STRATEGIES=["Trend Line Bounce","2 Touch Point Trend Line Break","3 / 3+ Touch Point Trend Line Break","Trend Line Break & Re-test","Trend Continuation","Imported"];
-const EXIT_TYPES=["TP","SL","TP1_BE","TP1_SL","BE","Trade In Progress"];
-const ACC_TYPES=["Cent Account","Dollar Account"];
-
+/* helpers */
 const r2=n=>Math.round(n*100)/100;
 const fmt$=n=>"$"+(isFinite(n)?r2(n):0).toFixed(2);
 const todayISO=()=>{const d=new Date();const tz=d.getTimezoneOffset();return new Date(d.getTime()-tz*60000).toISOString().slice(0,10)};
 
-/* ---------------- Local Storage helpers ---------------- */
-const USERS_KEY="ng_users_v1";
+const toISO=(v)=>{ // accepts "12-Mar-2025", "2025-03-12", etc.
+  if(!v) return todayISO();
+  const s=String(v).trim();
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const d=new Date(s); if(!isNaN(d)) {const t=new Date(d.getTime()-d.getTimezoneOffset()*60000); return t.toISOString().slice(0,10);}
+  return todayISO();
+};
+
+/* storage */
+const USERS_KEY="ng_users_v2";             // upgraded key to avoid old schema conflicts
 const CURR_KEY="ng_current_user_v1";
 const loadUsers=()=>{try{return JSON.parse(localStorage.getItem(USERS_KEY)||"[]")}catch{return[]}};
 const saveUsers=u=>{try{localStorage.setItem(USERS_KEY,JSON.stringify(u))}catch{}};
@@ -34,7 +62,7 @@ const getCurrent=()=>{try{return localStorage.getItem(CURR_KEY)||""}catch{return
 const loadState=e=>{try{return JSON.parse(localStorage.getItem("ng_state_"+e)||"null")}catch{return null}};
 const saveState=(e,s)=>{try{localStorage.setItem("ng_state_"+e,JSON.stringify(s))}catch{}};
 
-/* ---------------- PnL Math (with override support) ---------------- */
+/* ===================== P&L math ===================== */
 function perLotValueForMove(symbol,delta,accType){
   const abs=Math.abs(delta);const isStd=accType==="Dollar Account";const mult=std=>isStd?std:std/100;
   switch(symbol){
@@ -53,9 +81,7 @@ function legPnL(symbol,side,entry,exit,lot,accType){
   return raw*s;
 }
 function computeDollarPnL(t,accType){
-  // Manual override if provided (including CSV-imported P&L)
-  if (t && typeof t.pnlOverride === 'number' && isFinite(t.pnlOverride)) return t.pnlOverride;
-
+  if(typeof t.manualPnL === "number" && isFinite(t.manualPnL)) return t.manualPnL;
   if(t.exitType === "Trade In Progress") return null;
   if(typeof t.exit==="number"&&(!t.exitType||t.exitType==="TP")) return legPnL(t.symbol,t.side,t.entry,t.exit,t.lotSize,accType);
   const has=v=>typeof v==="number"&&isFinite(v);const{entry,sl,tp1,tp2,lotSize:lot}=t;
@@ -71,7 +97,7 @@ function computeDollarPnL(t,accType){
 const formatPnlDisplay=(accType,v)=>accType==="Cent Account"?(r2(v*100)).toFixed(2)+" ¢":fmt$(v);
 const formatUnits=(accType,v)=>accType==="Dollar Account"?r2(v).toFixed(2):r2(v*100).toFixed(2);
 
-/* ---------------- Export ---------------- */
+/* ===================== CSV helpers ===================== */
 function toCSV(rows,accType){
   const H=["Date","Symbol","Side","Lot Size","Entry","Exit","TP1","TP2","SL","Strategy","Exit Type","P&L","P&L (Units)"];
   const NL="\n"; const BOM="﻿";
@@ -85,14 +111,89 @@ function toCSV(rows,accType){
   }
   return BOM+out.join(NL);
 }
+function parseCSVRaw(text){
+  // tolerant CSV parser (no external deps)
+  const lines=[];
+  let i=0, cur="", inQ=false; 
+  const push=()=>{lines[lines.length-1].push(cur);cur=""};
+  const openLine=()=>{lines.push([])};
+  openLine();
+  for(const ch of text.replace(/\r/g,"")){
+    if(ch==='"' ){ if(inQ && cur.endsWith('"')) {cur=cur.slice(0,-1)+'"';} inQ=!inQ; continue; }
+    if(ch===',' && !inQ){ push(); continue; }
+    if(ch==='\n' && !inQ){ push(); openLine(); continue; }
+    cur+=ch;
+  }
+  push();
+  // drop empty last line
+  if(lines.length && lines[lines.length-1].length===1 && lines[lines.length-1][0]==="") lines.pop();
+  return lines.filter(r=>r.some(c=>String(c).trim()!==""));
+}
+function importCSVText(text, settings, accType){
+  const rows=parseCSVRaw(text);
+  if(!rows.length) return [];
+  const header=rows[0].map(h=>String(h).trim().toLowerCase());
+  const idx=(...names)=>{for(const n of names){const i=header.indexOf(n);if(i>-1) return i} return -1};
+  const iDate=idx("date");
+  const iSymbol=idx("symbol","pair","instrument");
+  const iSide=idx("side","action");
+  const iLot=idx("lot size","lots","quantity");
+  const iEntry=idx("entry","entry price","entryprice");
+  const iExit=idx("exit","exit price","exitprice");
+  const iTp1=idx("tp1","tp 1","take profit 1");
+  const iTp2=idx("tp2","tp 2","take profit 2");
+  const iSl=idx("sl","stop","stop loss","stop-loss");
+  const iStrategy=idx("strategy");
+  const iExitType=idx("exit type","exittype");
+  const iPnL=idx("p&l","pnl","profit");
+  const iStatus=idx("status");
+  const data=[];
+  for(let r=1;r<rows.length;r++){
+    const row=rows[r];
+    const get=(i)=> i>-1 ? row[i] : "";
+    const parseNum=(v)=>{const n=parseFloat(String(v).replace(/[^0-9.\-]/g,""));return isNaN(n)?undefined:n};
+    const parseSide=(v)=> String(v||"BUY").toUpperCase().includes("SEL")?"SELL":"BUY";
+    const symbol=String(get(iSymbol)||"").trim().toUpperCase() || "XAUUSD";
+    const side=parseSide(get(iSide));
+    const lot=parseNum(get(iLot)) ?? 0.01;
+    const entry=parseNum(get(iEntry));
+    const exit=parseNum(get(iExit));
+    const tp1=parseNum(get(iTp1));
+    const tp2=parseNum(get(iTp2));
+    const sl=parseNum(get(iSl));
+    const strategy=String(get(iStrategy)||settings.availableStrategies[0]||"Trend Line Bounce");
+    const exitTypeRaw=String(get(iExitType)||"").toUpperCase();
+    const statusRaw=String(get(iStatus)||"").toUpperCase();
+    let exitType = exitTypeRaw || (statusRaw==="OPEN" || (!exit && !exitTypeRaw) ? "Trade In Progress" : "TP");
+    // manual PnL if provided
+    const manualPnL= (get(iPnL)!=="" && get(iPnL)!=null) ? parseNum(get(iPnL)) : undefined;
+    const date= toISO(get(iDate)||todayISO());
+    data.push({
+      id: Math.random().toString(36).slice(2),
+      date,
+      symbol,
+      side,
+      lotSize: lot,
+      entry,
+      exit,
+      tp1,
+      tp2,
+      sl,
+      strategy,
+      exitType,
+      ...(typeof manualPnL==="number" && isFinite(manualPnL) ? {manualPnL} : {})
+    });
+  }
+  return data;
+}
 
-/* ---------------- Small UI helpers ---------------- */
+/* ===================== Small UI helpers ===================== */
 function Stat({label,value}){return(<div className="bg-slate-900/50 border border-slate-700 rounded-xl p-3"><div className="text-slate-400 text-xs">{label}</div><div className="text-2xl font-bold mt-1">{value}</div></div>)}
 function Th({children,className,...rest}){return(<th {...rest} className={(className?className+" ":"")+"px-4 py-3 text-left font-semibold text-slate-300"}>{children}</th>)}
 function Td({children,className,...rest}){return(<td {...rest} className={(className?className+" ":"")+"px-4 py-3 align-top"}>{children}</td>)}
-const num=(v)=>(v===""||v===undefined||v===null)?undefined:parseFloat(v);
+function Tag({children,className}){return(<span className={`px-2 py-0.5 rounded-md text-xs border ${className||"border-slate-600 text-slate-300"}`}>{children}</span>)}
 
-/* ---------------- Modals ---------------- */
+/* ===================== Generic Modal ===================== */
 function Modal({title,children,onClose,maxClass}){
   return(
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 p-3">
@@ -107,7 +208,7 @@ function Modal({title,children,onClose,maxClass}){
   )
 }
 
-/* Account setup (unchanged visually) */
+/* ===================== Account & Settings ===================== */
 function AccountSetupModal({name,setName,accType,setAccType,capital,setCapital,depositDate,setDepositDate,onClose,email}){
   const [tab,setTab]=useState("personal");
   const [pw1,setPw1]=useState(""); const [pw2,setPw2]=useState(""); const [msg,setMsg]=useState("");
@@ -144,113 +245,195 @@ function AccountSetupModal({name,setName,accType,setAccType,capital,setCapital,d
   )
 }
 
-/* Settings (adds Customize tab with DnD + toggles) */
-function SettingsPanel({
-  name,setName,accType,setAccType,capital,setCapital,depositDate,setDepositDate,email,
-  widgets,setWidgets, order, setOrder
-}){
-  const [tab,setTab]=useState("personal"); 
-  const [pw1,setPw1]=useState(""); const [pw2,setPw2]=useState(""); const [msg,setMsg]=useState("");
-  const savePw=()=>{ if(!pw1||pw1.length<6){setMsg("Password must be at least 6 characters.");return}
-    if(pw1!==pw2){setMsg("Passwords do not match.");return}
-    const users=loadUsers();const i=users.findIndex(u=>u.email.toLowerCase()===(email||"").toLowerCase());
-    if(i>=0){users[i].password=pw1;saveUsers(users);setMsg("Password updated.");setPw1("");setPw2("")}
+/* ===================== Settings: Customize Journal ===================== */
+function CustomizeJournal({settings,setSettings,availableSymbols,setAvailableSymbols,availableStrategies,setAvailableStrategies}){
+  const [newBoxTitle,setNewBoxTitle]=useState("");
+
+  // reorder by drag
+  const onDragStart=(e,idx)=>{e.dataTransfer.setData("text/plain",String(idx))};
+  const onDrop=(e,idx)=>{
+    const from=parseInt(e.dataTransfer.getData("text/plain"));
+    if(isNaN(from)) return;
+    const arr=[...settings.dashboardOrder];
+    const [moved]=arr.splice(from,1);
+    arr.splice(idx,0,moved);
+    setSettings({...settings,dashboardOrder:arr});
   };
-  const widgetLabels = { general: "General statistics", best: "Best strategy", detailed: "Detailed statistics" };
-  const [dragIdx,setDragIdx]=useState(null);
-  const toggle=(k)=> setWidgets({...widgets, [k]: !widgets[k]});
-  const reset=()=> setWidgets({general:true,best:true,detailed:true});
-  const onDragOver=(e,i)=>{e.preventDefault(); if(dragIdx===null||dragIdx===i)return; const next=[...order]; const [m]=next.splice(dragIdx,1); next.splice(i,0,m); setOrder(next); setDragIdx(i);};
-  const onDrop=()=>setDragIdx(null);
+
+  const knownWidgets=[
+    {key:"general",label:"General Statistics"},
+    {key:"best",label:"Best Strategy"},
+    {key:"detailed",label:"Detailed Statistics"},
+  ];
+
+  const addCustomBox=()=>{
+    const id="box_"+Math.random().toString(36).slice(2);
+    setSettings({...settings, customBoxes:[...(settings.customBoxes||[]), {id,title:newBoxTitle||"Custom Box",content:""}], dashboardOrder:[...settings.dashboardOrder, id]});
+    setNewBoxTitle("");
+  };
+  const removeFromDashboard=(key)=>{
+    setSettings({...settings, dashboardOrder: settings.dashboardOrder.filter(k=>k!==key)});
+  };
+
+  const updateStrategyColor=(name,color)=>{
+    const map={...(settings.strategyColors||{})};
+    map[name]=color;
+    setSettings({...settings,strategyColors:map});
+  };
 
   return(
-    <div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-6">
-      <div className="flex items-center gap-2 mb-4"><IconSettings/><div className="font-semibold">Settings</div></div>
-      <div className="flex gap-2 mb-4">
-        <button onClick={()=>setTab("personal")} className={`px-3 py-1.5 rounded-lg border ${tab==="personal"?"bg-slate-700 border-slate-600":"border-slate-700"}`}>Personal Info</button>
-        <button onClick={()=>setTab("security")} className={`px-3 py-1.5 rounded-lg border ${tab==="security"?"bg-slate-700 border-slate-600":"border-slate-700"}`}>Privacy & Security</button>
-        <button onClick={()=>setTab("customize")} className={`px-3 py-1.5 rounded-lg border ${tab==="customize"?"bg-slate-700 border-slate-600":"border-slate-700"}`}>Customize Journal</button>
+    <div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-6 space-y-6">
+      <div className="flex items-center gap-2 mb-2"><IconSettings/><div className="font-semibold">Customize Journal</div></div>
+
+      {/* Dashboard widgets */}
+      <div>
+        <div className="font-semibold mb-2">Dashboard Widgets (drag to reorder)</div>
+        <div className="space-y-2">
+          {settings.dashboardOrder.map((key,idx)=>(
+            <div key={key}
+                 draggable
+                 onDragStart={(e)=>onDragStart(e,idx)}
+                 onDragOver={(e)=>e.preventDefault()}
+                 onDrop={(e)=>onDrop(e,idx)}
+                 className="flex items-center justify-between bg-slate-900/60 border border-slate-700 rounded-xl p-3">
+              <div className="flex items-center gap-2">
+                <IconGrip className="cursor-move"/>
+                <div className="text-sm">{knownWidgets.find(w=>w.key===key)?.label || (settings.customBoxes||[]).find(b=>b.id===key)?.title || key}</div>
+              </div>
+              <button onClick={()=>removeFromDashboard(key)} className="px-2 py-1 rounded-lg border border-red-700 text-red-300 hover:bg-red-900/20">Remove</button>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-3">
+          <div className="text-sm mb-2">Add a custom box</div>
+          <div className="flex gap-2">
+            <input value={newBoxTitle} onChange={e=>setNewBoxTitle(e.target.value)} placeholder="Box title" className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/>
+            <button onClick={addCustomBox} className="px-3 py-2 rounded-lg border border-slate-700">Add Box</button>
+          </div>
+        </div>
       </div>
 
-      {tab==="personal"&&(
-        <div className="space-y-4">
-          <div><label className="text-sm text-slate-300">Name</label><input value={name} onChange={e=>setName(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div><label className="text-sm text-slate-300">Acc Type</label><select value={accType} onChange={e=>setAccType(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">{ACC_TYPES.map(s=><option key={s}>{s}</option>)}</select></div>
-            <div><label className="text-sm text-slate-300">Account Capital ($)</label><input type="number" value={capital} onChange={e=>setCapital(parseFloat(e.target.value||"0"))} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2" placeholder="0.00"/></div>
-            <div><label className="text-sm text-slate-300">Capital Deposit Date</label><input type="date" value={depositDate} onChange={e=>setDepositDate(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
+      {/* Symbols & Strategies */}
+      <div className="grid md:grid-cols-2 gap-6">
+        <div>
+          <div className="font-semibold mb-2">Symbols (Edit list)</div>
+          <EditableList items={availableSymbols} setItems={setAvailableSymbols} placeholder="Add symbol e.g. XAUUSD"/>
+        </div>
+        <div>
+          <div className="font-semibold mb-2">Strategies (Edit list + color)</div>
+          <EditableStrategyList items={availableStrategies} setItems={setAvailableStrategies} colors={settings.strategyColors||{}} onColorChange={updateStrategyColor}/>
+        </div>
+      </div>
+    </div>
+  )
+}
+function EditableList({items,setItems,placeholder}){
+  const [val,setVal]=useState("");
+  const add=()=>{const v=(val||"").trim(); if(!v) return; if(items.includes(v)) return; setItems([...items,v]); setVal("")};
+  const remove=(i)=>setItems(items.filter((_,idx)=>idx!==i));
+  return(
+    <div className="bg-slate-900/50 border border-slate-700 rounded-xl p-3">
+      <div className="flex gap-2 mb-3">
+        <input value={val} onChange={e=>setVal(e.target.value)} placeholder={placeholder} className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/>
+        <button onClick={add} className="px-3 py-2 rounded-lg border border-slate-700">Add</button>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {items.map((s,i)=>(
+          <span key={s+i} className="px-2 py-1 bg-slate-800 border border-slate-700 rounded-lg text-xs flex items-center gap-2">{s}
+            <button onClick={()=>remove(i)} className="text-red-300 border border-red-700 rounded px-1">x</button>
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+function EditableStrategyList({items,setItems,colors,onColorChange}){
+  const [val,setVal]=useState("");
+  const add=()=>{const v=(val||"").trim(); if(!v) return; if(items.includes(v)) return; setItems([...items,v]); setVal("")};
+  const remove=(i)=>setItems(items.filter((_,idx)=>idx!==i));
+  const ColorSel=({name})=>(
+    <select value={colors?.[name]||"none"} onChange={e=>onColorChange(name,e.target.value)} className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs">
+      <option value="none">Default</option>
+      <option value="green">Green</option>
+      <option value="red">Red</option>
+      <option value="mustard">Mustard Orange</option>
+    </select>
+  );
+  return(
+    <div className="bg-slate-900/50 border border-slate-700 rounded-xl p-3 space-y-2">
+      <div className="flex gap-2 mb-3">
+        <input value={val} onChange={e=>setVal(e.target.value)} placeholder="Add strategy" className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/>
+        <button onClick={add} className="px-3 py-2 rounded-lg border border-slate-700">Add</button>
+      </div>
+      {items.map((s,i)=>(
+        <div key={s+i} className="flex items-center justify-between bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2">
+          <span className="text-sm">{s}</span>
+          <div className="flex items-center gap-2">
+            <ColorSel name={s}/>
+            <button onClick={()=>remove(i)} className="text-red-300 border border-red-700 rounded px-2 py-1 text-xs">Remove</button>
           </div>
         </div>
-      )}
-
-      {tab==="security"&&(
-        <div className="space-y-3">
-          <div><label className="text-sm text-slate-300">New Password</label><input type="password" value={pw1} onChange={e=>setPw1(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
-          <div><label className="text-sm text-slate-300">Confirm Password</label><input type="password" value={pw2} onChange={e=>setPw2(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
-          {msg&&<div className="text-sky-400 text-sm">{msg}</div>}
-          <div className="text-right"><button onClick={savePw} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500">Update Password</button></div>
-        </div>
-      )}
-
-      {tab==="customize"&&(
-        <div className="space-y-4">
-          <div className="text-sm text-slate-300">Drag to reorder your dashboard. Toggle visibility per widget.</div>
-          <ul className="space-y-2">
-            {order.map((k,i)=>(
-              <li key={k}
-                  draggable
-                  onDragStart={()=>setDragIdx(i)}
-                  onDragOver={(e)=>onDragOver(e,i)}
-                  onDrop={onDrop}
-                  className="flex items-center justify-between bg-slate-900/50 border border-slate-700 rounded-xl p-3">
-                <div className="flex items-center gap-3">
-                  <span className="cursor-grab select-none">⋮⋮</span>
-                  <span className="font-medium">{widgetLabels[k]}</span>
-                </div>
-                <label className="flex items-center gap-2 text-xs">
-                  <input type="checkbox" checked={widgets[k]} onChange={()=>toggle(k)}/>
-                  <span>Show</span>
-                </label>
-              </li>
-            ))}
-          </ul>
-          <div className="flex gap-2 pt-2">
-            <button onClick={()=>setOrder(['general','best','detailed'])} className="px-3 py-2 rounded-lg border border-slate-700 hover:bg-slate-900">Reset order</button>
-            <button onClick={reset} className="px-3 py-2 rounded-lg border border-slate-700 hover:bg-slate-900">Reset visibility</button>
-          </div>
-        </div>
-      )}
+      ))}
     </div>
   )
 }
 
-/* Trade modal (adds P&L override input) */
-function TradeModal({initial,onClose,onSave,onDelete,accType}){
-  const i=initial||{}; const [symbol,setSymbol]=useState(i.symbol||SYMBOLS[0]); const [side,setSide]=useState(i.side||"BUY");
-  const [date,setDate]=useState(i.date||todayISO()); const [lotSize,setLotSize]=useState(i.lotSize??0.01);
+/* ===================== Trade Modal (Lot size below title + P&L override) ===================== */
+function TradeModal({initial,onClose,onSave,onDelete,accType,symbols,strategies}){
+  const i=initial||{}; 
+  const [symbol,setSymbol]=useState(i.symbol||symbols[0]||"XAUUSD"); 
+  const [side,setSide]=useState(i.side||"BUY");
+  const [date,setDate]=useState(i.date||todayISO()); 
+  const [lotSize,setLotSize]=useState(i.lotSize??0.01);     // moved to top section
   const [entry,setEntry]=useState(i.entry??""); const [exit,setExit]=useState(i.exit??"");
   const [tp1,setTp1]=useState(i.tp1??""); const [tp2,setTp2]=useState(i.tp2??""); const [sl,setSl]=useState(i.sl??"");
-  const [strategy,setStrategy]=useState(i.strategy||STRATEGIES[0]); const [exitType,setExitType]=useState(i.exitType||"TP");
-  const [pnlOverride,setPnlOverride]=useState(i.pnlOverride ?? "");
-  const draft=useMemo(()=>({id:i.id,date,symbol,side,lotSize:parseFloat(lotSize||0),entry:num(entry),exit:num(exit),tp1:num(tp1),tp2:num(tp2),sl:num(sl),strategy,exitType,pnlOverride:num(pnlOverride)}),[i.id,date,symbol,side,lotSize,entry,exit,tp1,tp2,sl,strategy,exitType,pnlOverride]);
-  const preview=useMemo(()=>{const v=computeDollarPnL(draft,accType);if(v===null||!isFinite(v))return"-";return`${formatPnlDisplay(accType,v)} (${formatUnits(accType,v)})`},[draft,accType]);
+  const [strategy,setStrategy]=useState(i.strategy||strategies[0]||DEFAULT_STRATEGIES[0]); 
+  const [exitType,setExitType]=useState(i.exitType||"TP");
+  const [manualPnL,setManualPnL]=useState(
+    (typeof i.manualPnL==="number" && isFinite(i.manualPnL)) ? i.manualPnL : ""
+  );
+
+  const num=v=>(v===""||v===undefined||v===null)?undefined:parseFloat(v);
+  const draft=useMemo(()=>({
+    id:i.id,
+    date,
+    symbol,
+    side,
+    lotSize:parseFloat(lotSize||0),
+    entry:num(entry),exit:num(exit),
+    tp1:num(tp1),tp2:num(tp2),sl:num(sl),
+    strategy,exitType,
+    ...(manualPnL!==""?{manualPnL:parseFloat(manualPnL)}:{})
+  }),[i.id,date,symbol,side,lotSize,entry,exit,tp1,tp2,sl,strategy,exitType,manualPnL]);
+
+  const preview=useMemo(()=>{
+    const v=computeDollarPnL(draft,accType);
+    if(v===null||!isFinite(v)) return "-";
+    return `${formatPnlDisplay(accType,v)} (${formatUnits(accType,v)})`;
+  },[draft,accType]);
 
   return(
     <Modal title={i.id?"Edit Trade":"Add Trade"} onClose={onClose} maxClass="max-w-4xl">
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-        <div><label className="text-sm text-slate-300">Symbol</label><select value={symbol} onChange={e=>setSymbol(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">{SYMBOLS.map(s=><option key={s}>{s}</option>)}</select></div>
-        <div><label className="text-sm text-slate-300">Action</label><div className="mt-1 grid grid-cols-2 gap-2">{["BUY","SELL"].map(s=>(<button key={s} onClick={()=>setSide(s)} className={`px-2 py-2 rounded-lg border ${side===s ? (s==="BUY" ? "bg-green-600 border-green-500" : "bg-red-600 border-red-500") : "border-slate-700"}`}>{s}</button>))}</div></div>
+      {/* Lot size under title (full width) */}
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-3">
+        <div><label className="text-sm text-slate-300">Lot size</label><input type="number" step="0.01" value={lotSize} onChange={e=>setLotSize(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
         <div><label className="text-sm text-slate-300">Date</label><input type="date" value={date} onChange={e=>setDate(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
-        <div><label className="text-sm text-slate-300">Lot size</label><input type="number" step="0.01" value={lotSize} onChange={e=>setLotSize(e.target.value)} className="w-24 mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
+        <div><label className="text-sm text-slate-300">Symbol</label><select value={symbol} onChange={e=>setSymbol(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">{symbols.map(s=><option key={s}>{s}</option>)}</select></div>
+        <div><label className="text-sm text-slate-300">Action</label><div className="mt-1 grid grid-cols-2 gap-2">{["BUY","SELL"].map(s=>(<button key={s} onClick={()=>setSide(s)} className={`px-2 py-2 rounded-lg border ${side===s ? (s==="BUY" ? "bg-green-600 border-green-500" : "bg-red-600 border-red-500") : "border-slate-700"}`}>{s}</button>))}</div></div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
         <div><label className="text-sm text-slate-300">Entry price</label><input type="number" step="0.0001" value={entry} onChange={e=>setEntry(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
         <div><label className="text-sm text-slate-300">Exit Price</label><input type="number" step="0.0001" value={exit} onChange={e=>setExit(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2" placeholder="Leave blank for OPEN"/></div>
         <div><label className="text-sm text-slate-300">TP 1</label><input type="number" step="0.0001" value={tp1} onChange={e=>setTp1(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
         <div><label className="text-sm text-slate-300">TP 2</label><input type="number" step="0.0001" value={tp2} onChange={e=>setTp2(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
         <div><label className="text-sm text-slate-300">Stop-Loss</label><input type="number" step="0.0001" value={sl} onChange={e=>setSl(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
-        <div><label className="text-sm text-slate-300">Strategy</label><select value={strategy} onChange={e=>setStrategy(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">{STRATEGIES.map(s=><option key={s}>{s}</option>)}</select></div>
+        <div><label className="text-sm text-slate-300">Strategy</label><select value={strategy} onChange={e=>setStrategy(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">{strategies.map(s=><option key={s}>{s}</option>)}</select></div>
         <div><label className="text-sm text-slate-300">Exit Type</label><select value={exitType} onChange={e=>setExitType(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">{EXIT_TYPES.map(s=><option key={s}>{s}</option>)}</select></div>
-        <div><label className="text-sm text-slate-300">P&L override ($, optional)</label><input type="number" step="0.01" value={pnlOverride??""} onChange={e=>setPnlOverride(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2" placeholder="Leave blank to auto-calc"/></div>
+        <div><label className="text-sm text-slate-300">P&L override (optional)</label><input type="number" step="0.01" value={manualPnL} onChange={e=>setManualPnL(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2" placeholder="Leave blank to auto-calc"/></div>
       </div>
+
       <div className="mt-4 flex items-center justify-between">
         <div className="text-sm text-slate-300">P&L preview: <span className="font-semibold">{preview}</span></div>
         <div className="flex items-center gap-2">
@@ -263,217 +446,126 @@ function TradeModal({initial,onClose,onSave,onDelete,accType}){
   )
 }
 
-/* Calendar modal (unchanged functionally) */
-function CalendarModal({onClose,trades,view,setView,month,setMonth,year,setYear,selectedDate,setSelectedDate,accType}){
-  const monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const dim=(y,m)=>new Date(y,m+1,0).getDate(); const fd=(y,m)=>new Date(y,m,1).getDay();
-  const byDate=useMemo(()=>{const m={};for(const t of trades){m[t.date]=m[t.date]||[];m[t.date].push(t)}return m},[trades]);
-  const pnlByDate=useMemo(()=>{const m={};for(const date in byDate){const ts=byDate[date].filter(t=>t.exitType && t.exitType !== "Trade In Progress");const pnl=ts.reduce((a,t)=>a+ (computeDollarPnL(t,accType) || 0),0);m[date]=pnl}return m},[byDate,accType]);
+/* ===================== Notes (rich tools + date + ref trades) ===================== */
+function NoteComposer({date,setDate,html,setHtml,refTradeId,setRefTradeId,tradesForDate,onClose,onSave}){
+  const boxRef=useRef(null);
+  useEffect(()=>{ if(boxRef.current) boxRef.current.innerHTML = html || "" },[]);
+  const exec=(cmd,val=null)=>document.execCommand(cmd,false,val);
+  const addChecklist=()=>{
+    if(!boxRef.current) return;
+    const line = document.createElement("div");
+    line.className="flex items-center gap-2 mb-1";
+    line.innerHTML = `<input type="checkbox" class="accent-blue-500"><span contenteditable="true">Checklist item</span>`;
+    boxRef.current.appendChild(line);
+  }
+  const save=()=>{
+    const content = boxRef.current ? boxRef.current.innerHTML : "";
+    onSave({date, html:content, refTradeId});
+  }
   return(
-    <Modal title="Calendar" onClose={onClose} maxClass="max-w-lg">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex gap-2">{['year','month','day'].map(v=>(<button key={v} onClick={()=>setView(v)} className={`px-3 py-1.5 rounded-lg border ${view===v?'bg-slate-700 border-slate-600':'border-slate-700'}`}>{v.toUpperCase()}</button>))}</div>
-        {view!=="day"&&(<div className="flex items-center gap-2">
-          <button onClick={()=>view==='month'?(setMonth(m=>(m+11)%12),setYear(year-(month===0?1:0))):setYear(year-1)} className="px-2 py-1 border border-slate-700 rounded-lg">&lt;</button>
-          <div className="text-sm">{view==='month'?`${monthNames[month]} ${year}`:year}</div>
-          <button onClick={()=>view==='month'?(setMonth(m=>(m+1)%12),setYear(year+(month===11?1:0))):setYear(year+1)} className="px-2 py-1 border border-slate-700 rounded-lg">&gt;</button>
-        </div>)}
-      </div>
-      {view==="year"&&(
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-          {monthNames.map((mn,i)=>(<div key={mn} className="bg-slate-900/50 border border-slate-700 rounded-lg p-1 text-sm">
-            <div className="font-semibold mb-1">{mn}</div>
-            <div className="text-slate-400 text-xs mb-1">Trades: {trades.filter(t=>(new Date(t.date)).getMonth()===i&&(new Date(t.date)).getFullYear()===year).length}</div>
-            <button onClick={()=>{setMonth(i);setView('month')}} className="px-2 py-1 rounded-lg border border-slate-700 hover:bg-slate-800 text-xs">Open</button>
-          </div>))}
-        </div>
-      )}
-      {view==="month"&&(
+    <Modal title="New Note" onClose={onClose} maxClass="max-w-3xl">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
         <div>
-          <div className="grid grid-cols-7 text-center text-xs text-slate-400 mb-1">{dayNames.map(d=><div key={d} className="py-1">{d}</div>)}</div>
-          <div className="grid grid-cols-7 gap-1">
-            {Array.from({length:fd(year,month)}).map((_,i)=>(<div key={"e"+i}/>))}
-            {Array.from({length:dim(year,month)}).map((_,d)=>{const day=String(d+1).padStart(2,'0');const dateISO=`${year}-${String(month+1).padStart(2,'0')}-${day}`;const items=byDate[dateISO]||[];const pnl=pnlByDate[dateISO]||0;
-              const colorClass=pnl>0 ? 'border-green-700/60 bg-green-900/10' : pnl<0 ? 'border-red-700/60 bg-red-900/10' : items.length ? 'border-blue-700/60 bg-blue-900/10' : 'border-slate-700 bg-slate-900/30';
-              return(<button key={dateISO} onClick={()=>{setSelectedDate(dateISO);setView('day')}} className={`text-left p-1 rounded-lg border ${colorClass}`}>
-                <div className="text-xs text-slate-400">{d+1}</div>
-                <div className={`text-xs ${pnl>0?'text-green-400':pnl<0?'text-red-400':'text-slate-400'}`}>{pnl!==0 ? formatPnlDisplay(accType,pnl) : ''}</div>
-              </button>)})}
-          </div>
+          <label className="text-sm text-slate-300">Date</label>
+          <input type="date" value={date} onChange={e=>{setDate(e.target.value); setRefTradeId("");}} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/>
         </div>
-      )}
-      {view==="day"&&(
-        <div>
-          <div className="text-sm text-slate-300 mb-2">{selectedDate}</div>
-          {(byDate[selectedDate]||[]).length===0?(<div className="text-slate-400 text-sm">No trades this day.</div>):(
-            <div className="space-y-2">{(byDate[selectedDate]||[]).map(t=>(<div key={t.id} className="bg-slate-900/50 border border-slate-700 rounded-xl p-3 flex items-center justify-between">
-              <div className="text-sm"><span className="text-blue-300 font-medium">{t.symbol}</span> · {t.side} · Lot {t.lotSize}</div>
-              <div className="text-sm">{typeof t.entry==='number'?fmt$(t.entry):''} → {typeof t.exit==='number'?fmt$(t.exit):''}</div>
-            </div>))}</div>
-          )}
-        </div>
-      )}
-    </Modal>
-  )
-}
-
-/* Best Strategy Card */
-function BestStrategyCard({trades,accType}){
-  const stats = useMemo(()=>{
-    const by = {};
-    for(const t of trades){
-      if(!t.exitType || t.exitType==="Trade In Progress") continue;
-      const s = t.strategy || "Imported";
-      const v = computeDollarPnL(t,accType);
-      if (v===null || !isFinite(v)) continue;
-      if(!by[s]) by[s] = {cnt:0,wins:0,losses:0};
-      by[s].cnt++;
-      if(v>0) by[s].wins++; else if(v<0) by[s].losses++;
-    }
-    let best = null;
-    for(const k of Object.keys(by)){
-      const o=by[k]; if(o.cnt<3) continue;
-      const wr = o.cnt ? Math.round((o.wins/o.cnt)*100) : 0;
-      if(!best || wr>best.wr) best = {name:k, ...o, wr};
-    }
-    return best;
-  },[trades,accType]);
-
-  return(
-    <div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4">
-      <div className="text-sm font-semibold mb-2">Best strategy</div>
-      {!stats ? (
-        <div className="text-slate-400 text-sm">Not enough data yet. Enter at least <span className="font-semibold">3 trades</span> for a strategy.</div>
-      ) : (
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="text-lg font-semibold">{stats.name}</div>
-            <div className="text-slate-400 text-sm">Trades: {stats.cnt} · Wins: {stats.wins} · Losses: {stats.losses}</div>
-          </div>
-          <div className="text-3xl font-extrabold text-blue-300">{stats.wr}%</div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-/* Notes */
-function NoteComposeModal({onClose,onSave,trades,accType}){
-  const [text,setText]=useState("");
-  const [refs,setRefs]=useState([]);
-  const addRef=(id)=>{ if(!id) return; if(refs.includes(id)) return; setRefs([...refs,id]); }
-  const removeRef=(id)=> setRefs(refs.filter(r=>r!==id));
-  const refTrade=(id)=>trades.find(t=>t.id===id);
-
-  return(
-    <Modal title="New note" onClose={onClose} maxClass="max-w-3xl">
-      <div className="space-y-3">
-        <textarea rows={6} value={text} onChange={e=>setText(e.target.value)}
-          className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2" placeholder="Write your trading thoughts for today..." />
-        <div>
-          <div className="text-sm text-slate-300 mb-1">Attach a trade</div>
-          <div className="flex gap-2">
-            <select className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"
-              onChange={e=>addRef(e.target.value)} defaultValue="">
-              <option value="" disabled>Select from history…</option>
-              {trades.slice(0,50).map(t=><option key={t.id} value={t.id}>{t.date} · {t.symbol} · {t.side} · lot {t.lotSize}</option>)}
-            </select>
-          </div>
-        </div>
-
-        {refs.length>0 && (
-          <div className="space-y-2">
-            {refs.map(id=>{
-              const t = refTrade(id); if(!t) return null;
-              const v = computeDollarPnL(t,accType);
-              const closed = t.exitType && t.exitType!=="Trade In Progress";
-              return (
-                <div key={id} className="glow-card flex items-center justify-between">
-                  <div className="text-sm">
-                    <div className="font-semibold text-blue-300">{t.symbol}</div>
-                    <div className={`${v>0?'text-green-400':v<0?'text-red-400':'text-slate-300'} text-sm`}>
-                      {v===null?'-':formatPnlDisplay(accType,v)} · {closed?'CLOSED':'OPEN'}
-                    </div>
-                    <div className="text-slate-400 text-xs">Strategy: {t.strategy || '—'}</div>
-                  </div>
-                  <button onClick={()=>removeRef(id)} className="px-2 py-1 rounded-lg border border-slate-700 hover:bg-slate-800">Remove</button>
-                </div>
-              )
+        <div className="md:col-span-2">
+          <label className="text-sm text-slate-300">Reference Trade (same date)</label>
+          <select value={refTradeId} onChange={e=>setRefTradeId(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">
+            <option value="">None</option>
+            {tradesForDate.map(t=>{
+              const v=computeDollarPnL(t,t.accType || "Dollar Account");
+              const status = (t.exitType && t.exitType!=="Trade In Progress") ? "CLOSED" : "OPEN";
+              return (<option key={t.id} value={t.id}>{`${t.symbol} · ${status} · ${t.strategy}`}</option>)
             })}
-          </div>
-        )}
-
-        <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="px-4 py-2 rounded-lg border border-slate-600 hover:bg-slate-700">Discard</button>
-          <button onClick={()=>onSave({id:Math.random().toString(36).slice(2), date:todayISO(), text, refs, createdAt:Date.now()})} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500">Save</button>
+          </select>
         </div>
+      </div>
+
+      <div className="flex gap-2 mb-2">
+        <button className="toolbar-btn" onClick={()=>exec("bold")}>B</button>
+        <button className="toolbar-btn" onClick={()=>exec("italic")}><i>I</i></button>
+        <button className="toolbar-btn" onClick={()=>exec("underline")}><u>U</u></button>
+        <select className="toolbar-select" onChange={e=>exec("fontSize", e.target.value)}>
+          {[1,2,3,4,5,6,7].map(n=><option key={n} value={n}>Size {n}</option>)}
+        </select>
+        <button className="toolbar-btn" onClick={addChecklist}>Checklist</button>
+      </div>
+
+      <div ref={boxRef} contentEditable className="note-editor"></div>
+
+      <div className="mt-4 text-right">
+        <button onClick={onClose} className="px-4 py-2 rounded-lg border border-slate-600 hover:bg-slate-700 mr-2">Discard</button>
+        <button onClick={save} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500">Save Note</button>
       </div>
     </Modal>
   )
 }
-function NotesView({notes,trades,accType,onAdd,onDelete}){
-  const [compose,setCompose]=useState(true); // open compose when entering Notes
+
+function NotesTab({notes,setNotes,trades}){
+  const [composing,setComposing]=useState(true);
+  const [date,setDate]=useState(todayISO());
+  const [html,setHtml]=useState("");
+  const [refTradeId,setRefTradeId]=useState("");
+  const tradesForDate=useMemo(()=>trades.filter(t=>t.date===date),[trades,date]);
+
+  const saveNote=({date,html,refTradeId})=>{
+    const id=Math.random().toString(36).slice(2);
+    setNotes([{id,date,html,refTradeId},...notes]);
+    setComposing(false);
+    setHtml("");
+    setRefTradeId("");
+  };
+  const editNote=(n)=>{
+    setDate(n.date); setHtml(n.html); setRefTradeId(n.refTradeId||""); setComposing(true);
+    // remove old, will re-add on save (simple approach)
+    setNotes(notes.filter(x=>x.id!==n.id));
+  }
+
+  if(composing){
+    return <NoteComposer date={date} setDate={setDate} html={html} setHtml={setHtml} refTradeId={refTradeId} setRefTradeId={setRefTradeId} tradesForDate={tradesForDate} onClose={()=>setComposing(false)} onSave={saveNote}/>
+  }
+
   return(
     <div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4">
       <div className="flex items-center justify-between mb-3">
-        <div className="text-sm font-semibold">Notes</div>
-        {!compose && <button onClick={()=>setCompose(true)} className="px-3 py-2 rounded-lg border border-slate-700 hover:bg-slate-800"><IconPlus/> New</button>}
+        <div className="text-sm font-semibold flex items-center gap-2"><IconNote/> Notes</div>
+        <button onClick={()=>{setDate(todayISO());setHtml("");setRefTradeId("");setComposing(true)}} className="px-3 py-2 rounded-lg border border-slate-700"><IconPlus/> New Note</button>
       </div>
-      {compose ? (
-        <NoteComposeModal onClose={()=>setCompose(false)} onSave={(n)=>{onAdd(n); setCompose(false)}} trades={trades} accType={accType}/>
+
+      {notes.length===0 ? (
+        <div className="text-slate-400 text-sm">No notes yet.</div>
       ) : (
-        <div className="space-y-3">
-          {notes.length===0 ? (
-            <div className="text-slate-400 text-sm">No notes yet. Click <span className="font-semibold">New</span> to write your first note.</div>
-          ) : notes.slice().sort((a,b)=>b.createdAt-a.createdAt).map(n=>(
-            <div key={n.id} className="bg-slate-900/50 border border-slate-700 rounded-xl p-3">
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-semibold">{n.date}</div>
-                <button onClick={()=>onDelete(n.id)} className="px-2 py-1 rounded-lg border border-red-700 text-red-300 hover:bg-red-900/20">Delete</button>
-              </div>
-              <div className="text-slate-200 text-sm mt-1 line-clamp-4 whitespace-pre-wrap">{n.text}</div>
-              {n.refs?.length>0 && (
-                <div className="mt-2 grid md:grid-cols-2 gap-2">
-                  {n.refs.map(id=>{
-                    const t=trades.find(x=>x.id===id); if(!t) return null;
-                    const v = computeDollarPnL(t,accType); const closed = t.exitType && t.exitType!=="Trade In Progress";
-                    return (
-                      <div key={id} className="glow-card">
-                        <div className="text-xs text-slate-400">{t.date}</div>
-                        <div className="font-semibold text-blue-300">{t.symbol}</div>
-                        <div className={`${v>0?'text-green-400':v<0?'text-red-400':'text-slate-300'} text-sm`}>
-                          {v===null?'-':formatPnlDisplay(accType,v)} · {closed?'CLOSED':'OPEN'}
-                        </div>
-                        <div className="text-slate-400 text-xs">Strategy: {t.strategy || '—'}</div>
-                      </div>
-                    )
-                  })}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {notes.map(n=>{
+            const ref = trades.find(t=>t.id===n.refTradeId);
+            const pnl = ref ? computeDollarPnL(ref,"Dollar Account") : null;
+            const status = ref ? ((ref.exitType && ref.exitType!=="Trade In Progress")?"CLOSED":"OPEN") : null;
+            return (
+              <div key={n.id} className="bg-slate-900/50 border border-slate-700 rounded-xl p-3 note-card">
+                <div className="text-xs text-slate-400 mb-1">{n.date}</div>
+                {ref && (
+                  <div className="mb-2 flex flex-wrap items-center gap-2">
+                    <Tag className="border-sky-700 text-sky-300">Ref: {ref.symbol}</Tag>
+                    <Tag className={`${pnl===0?ORANGE_CLASS: pnl>0?'text-green-400':'text-red-400'} border-slate-600`}>{pnl===0?"BE":formatUnits("Dollar Account",pnl)}</Tag>
+                    <Tag>{(ref.exitType && ref.exitType!=="Trade In Progress")?"CLOSED":"OPEN"}</Tag>
+                    <Tag className="border-indigo-700 text-indigo-300">{ref.strategy}</Tag>
+                  </div>
+                )}
+                <div className="prose prose-invert max-h-36 overflow-auto" dangerouslySetInnerHTML={{__html:n.html}} />
+                <div className="text-right mt-2">
+                  <button onClick={()=>editNote(n)} className="px-2 py-1 rounded-lg border border-slate-700 hover:bg-slate-800 text-xs">Edit</button>
                 </div>
-              )}
-            </div>
-          ))}
+              </div>
+            )
+          })}
         </div>
       )}
     </div>
   )
 }
 
-/* User menu with Export + Import + Logout */
-function UserMenu({onExport,onImportClick,onLogout}){
-  const [open,setOpen]=useState(false);
-  return(
-    <div className="relative">
-      <button onClick={()=>setOpen(v=>!v)} className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-700 hover:bg-slate-800"><IconUser/></button>
-      {open&&(<div className="absolute right-0 mt-2 w-52 bg-slate-800 border border-slate-700 rounded-xl shadow-lg overflow-hidden">
-        <button onClick={()=>{setOpen(false);onExport()}} className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-700"><IconDownload/>Export CSV</button>
-        <button onClick={()=>{setOpen(false);onImportClick()}} className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-700"><IconUpload/>Import CSV</button>
-        <button onClick={()=>{setOpen(false);onLogout()}} className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-700 text-red-300"><IconLogout/>Logout</button>
-      </div>)}
-    </div>
-  )
-}
-
-/* General stats (unchanged) */
+/* ===================== General Stats / Best Strategy / Detailed ===================== */
 function GeneralStats({trades,accType,capital,depositDate}){
   const realized=trades.filter(t=>new Date(t.date)>=new Date(depositDate)&&t.exitType && t.exitType !== "Trade In Progress");
   const pnl=realized.map(t=>computeDollarPnL(t,accType)).filter(v=>v!==null&&isFinite(v));
@@ -486,8 +578,33 @@ function GeneralStats({trades,accType,capital,depositDate}){
     <Stat label="Open" value={open}/>
   </div>)
 }
+function BestStrategy({trades,accType,colors}){
+  const stats=useMemo(()=>{
+    const map={};
+    for(const t of trades){
+      if(!(t.exitType && t.exitType!=="Trade In Progress")) continue;
+      const v=computeDollarPnL(t,accType); if(v===null) continue;
+      const s=t.strategy || "N/A";
+      map[s]=map[s]||{count:0,wins:0}; map[s].count++; if(v>0) map[s].wins++;
+    }
+    return Object.entries(map).map(([name,st])=>({name,count:st.count,wr: st.count? Math.round(100*st.wins/st.count):0}));
+  },[trades,accType]);
 
-/* Detailed stats (unchanged) */
+  if(!stats.length) return (<div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4">Not enough data yet.</div>);
+
+  const eligible=stats.filter(s=>s.count>=3).sort((a,b)=>b.wr-a.wr);
+  if(!eligible.length) return (<div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4">Best strategy will appear after at least 3 trades per strategy.</div>);
+
+  const best=eligible[0];
+  const colorClass = STRAT_COLORS[colors?.[best.name] || "none"] || "";
+  return(
+    <div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4">
+      <div className="text-sm font-semibold mb-2">Best Strategy</div>
+      <div className={`text-3xl font-bold ${colorClass}`}>{best.name}</div>
+      <div className="text-slate-300 mt-1">{best.wr}% win rate · {best.count} trades</div>
+    </div>
+  )
+}
 function DetailedStats({trades,accType}){
   const rows=useMemo(()=>{const m={};for(const t of trades){const k=t.symbol||"N/A";const v=computeDollarPnL(t,accType);const s=m[k]||{count:0,pnl:0};s.count+=1;s.pnl+=(v&&isFinite(v))?v:0;m[k]=s}return Object.entries(m).map(([sym,v])=>({sym,count:v.count,pnl:v.pnl}))},[trades,accType]);
   return(<div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4">
@@ -500,30 +617,49 @@ function DetailedStats({trades,accType}){
   </div>)
 }
 
-/* Histories (unchanged layout) */
-function Histories({trades,accType,onEdit,onDelete}){
+/* ===================== Histories ===================== */
+function Histories({trades,accType,onEdit,onDelete,strategyColors}){
   return(<div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4">
     <div className="flex items-center justify-between mb-2"><div className="text-sm font-semibold">Trade History</div></div>
     <div className="overflow-auto"><table className="min-w-full text-sm">
-      <thead><tr><Th>Date</Th><Th>Symbol</Th><Th>Side</Th><Th>Lot size</Th><Th>Entry</Th><Th>Exit</Th><Th>TP1</Th><Th>TP2</Th><Th>SL</Th><Th>Exit Type</Th><Th>P&L</Th><Th>P&L (Units)</Th><Th>Status</Th><Th>Actions</Th></tr></thead>
-      <tbody>{trades.map(t=>{const v=computeDollarPnL(t,accType);const closed= t.exitType && t.exitType !== "Trade In Progress";return(<tr key={t.id} className="border-t border-slate-700">
-        <Td>{t.date}</Td><Td>{t.symbol}</Td><Td>{t.side}</Td><Td>{t.lotSize}</Td>
-        <Td>{typeof t.entry==='number'?t.entry:''}</Td><Td>{typeof t.exit==='number'?t.exit:''}</Td>
-        <Td>{typeof t.tp1==='number'?t.tp1:''}</Td><Td>{typeof t.tp2==='number'?t.tp2:''}</Td><Td>{typeof t.sl==='number'?t.sl:''}</Td>
-        <Td>{t.exitType||""}</Td>
-        <Td className={v>0?'text-green-400':v<0?'text-red-400':''}>{v===null?'-':formatPnlDisplay(accType,v)}</Td>
-        <Td className={v>0?'text-green-400':v<0?'text-red-400':''}>{v===null?'-':formatUnits(accType,v)}</Td>
-        <Td>{closed?'CLOSED':'OPEN'}</Td>
-        <Td><div className="flex gap-2">
-          <button onClick={()=>onEdit(t)} className="px-2 py-1 rounded-lg border border-slate-700 hover:bg-slate-700">✎</button>
-          <button onClick={()=>onDelete(t.id)} className="px-2 py-1 rounded-lg border border-red-700 text-red-300 hover:bg-red-900/20">✕</button>
-        </div></Td>
-      </tr>)})}</tbody></table></div>
+      <thead><tr><Th>Date</Th><Th>Symbol</Th><Th>Side</Th><Th>Lot size</Th><Th>Entry</Th><Th>Exit</Th><Th>TP1</Th><Th>TP2</Th><Th>SL</Th><Th>Strategy</Th><Th>Exit Type</Th><Th>P&L</Th><Th>P&L (Units)</Th><Th>Status</Th><Th>Actions</Th></tr></thead>
+      <tbody>{trades.map(t=>{
+        const v=computeDollarPnL(t,accType);
+        const closed= t.exitType && t.exitType !== "Trade In Progress";
+        const pnlClass = v===0 ? ORANGE_CLASS : v>0 ? 'text-green-400' : v<0 ? 'text-red-400' : '';
+        const stratClass = STRAT_COLORS[strategyColors?.[t.strategy] || "none"] || "";
+        return(<tr key={t.id} className="border-t border-slate-700">
+          <Td>{t.date}</Td><Td>{t.symbol}</Td><Td>{t.side}</Td><Td>{t.lotSize}</Td>
+          <Td>{typeof t.entry==='number'?t.entry:''}</Td><Td>{typeof t.exit==='number'?t.exit:''}</Td>
+          <Td>{typeof t.tp1==='number'?t.tp1:''}</Td><Td>{typeof t.tp2==='number'?t.tp2:''}</Td><Td>{typeof t.sl==='number'?t.sl:''}</Td>
+          <Td><span className={stratClass}>{t.strategy}</span></Td>
+          <Td>{t.exitType||""}</Td>
+          <Td className={pnlClass}>{v===null?'-':formatPnlDisplay(accType,v)}</Td>
+          <Td className={pnlClass}>{v===null?'-':formatUnits(accType,v)}</Td>
+          <Td>{closed?'CLOSED':'OPEN'}</Td>
+          <Td><div className="flex gap-2">
+            <button onClick={()=>onEdit(t)} className="px-2 py-1 rounded-lg border border-slate-700 hover:bg-slate-700">✎</button>
+            <button onClick={()=>onDelete(t.id)} className="px-2 py-1 rounded-lg border border-red-700 text-red-300 hover:bg-red-900/20">✕</button>
+          </div></Td>
+        </tr>)})}</tbody></table></div>
   </div>)
 }
 
-/* Header/AppShell */
-function Header({logoSrc,onToggleSidebar,onExport,onImportClick,onLogout}){
+/* ===================== Header / User Menu (Export + Import) ===================== */
+function UserMenu({onExport,onImport,onLogout}){
+  const [open,setOpen]=useState(false);
+  return(
+    <div className="relative">
+      <button onClick={()=>setOpen(v=>!v)} className="flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-700 hover:bg-slate-800"><IconUser/></button>
+      {open&&(<div className="absolute right-0 mt-2 w-56 bg-slate-800 border border-slate-700 rounded-xl shadow-lg overflow-hidden">
+        <button onClick={()=>{setOpen(false);onExport()}} className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-700"><IconDownload/>Export CSV</button>
+        <button onClick={()=>{setOpen(false);onImport()}} className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-700"><IconUpload/>Import CSV</button>
+        <button onClick={()=>{setOpen(false);onLogout()}} className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-700 text-red-300"><IconLogout/>Logout</button>
+      </div>)}
+    </div>
+  )
+}
+function Header({logoSrc,onToggleSidebar,onExport,onImport,onLogout}){
   return(<div className="sticky top-0 z-30 flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-950/70 backdrop-blur">
     <div className="flex items-center gap-3">
       <button onClick={onToggleSidebar} className="px-3 py-2 rounded-lg border border-slate-700 hover:bg-slate-800">☰</button>
@@ -533,12 +669,14 @@ function Header({logoSrc,onToggleSidebar,onExport,onImportClick,onLogout}){
         <span className="bg-blue-900 text-xs px-2 py-0.5 rounded-md">Trading Journal</span>
       </div>
     </div>
-    <UserMenu onExport={onExport} onImportClick={onImportClick} onLogout={onLogout}/>
+    <UserMenu onExport={onExport} onImport={onImport} onLogout={onLogout}/>
   </div>)
 }
-function AppShell({children,capitalPanel,nav,logoSrc,onToggleSidebar,onExport,onImportClick,onLogout,sidebarCollapsed}){
+
+/* ===================== AppShell ===================== */
+function AppShell({children,capitalPanel,nav,logoSrc,onToggleSidebar,onExport,onImport,onLogout,sidebarCollapsed}){
   return(<div className="min-h-screen">
-    <Header logoSrc={logoSrc} onToggleSidebar={onToggleSidebar} onExport={onExport} onImportClick={onImportClick} onLogout={onLogout}/>
+    <Header logoSrc={logoSrc} onToggleSidebar={onToggleSidebar} onExport={onExport} onImport={onImport} onLogout={onLogout}/>
     <div className="flex">
       {!sidebarCollapsed&&(<div className="w-72 shrink-0 border-r border-slate-800 min-h-[calc(100vh-56px)] p-4 space-y-4">
         <div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4">{capitalPanel}</div>
@@ -549,7 +687,7 @@ function AppShell({children,capitalPanel,nav,logoSrc,onToggleSidebar,onExport,on
   </div>)
 }
 
-/* LoginView (unchanged) */
+/* ===================== Login View (Google always auto-creates) ===================== */
 function LoginView({onLogin,onSignup,initGoogle,resetStart}){
   const [mode,setMode]=useState("login");
   const [email,setEmail]=useState(""); const [password,setPassword]=useState(""); const [showPw,setShowPw]=useState(false);
@@ -595,7 +733,7 @@ function LoginView({onLogin,onSignup,initGoogle,resetStart}){
   </div>)
 }
 
-/* Reset modals (unchanged except messaging text) */
+/* ===================== Reset Modals (EmailJS same as before) ===================== */
 function parseJwt(token){try{return JSON.parse(atob(token.split('.')[1]))}catch{return null}}
 function ResetModal({email,onClose,onReset}){
   const [e,setE]=useState(email||""); const [link,setLink]=useState(""); const [msg,setMsg]=useState("");
@@ -610,14 +748,13 @@ function ResetModal({email,onClose,onReset}){
       await emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams);
       setMsg('Reset email sent successfully.');
     } catch (error) {
-      setMsg('Failed to send email: ' + (error?.text || 'EmailJS error'));
+      setMsg('Failed to send email: ' + (error?.text || "Unknown error"));
     }
   }
   return(<Modal title="Password reset" onClose={onClose} maxClass="max-w-md">
     <div className="space-y-3">
       <div><label className="text-sm text-slate-300">Your email</label><input value={e} onChange={ev=>setE(ev.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
       <button onClick={start} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500">Send reset link</button>
-      <div className="text-slate-400 text-xs">Please wait — the email will arrive shortly.</div>
       {msg&&<div className="text-sky-400 text-sm">{msg}</div>}
       {link&&<div className="text-xs break-all text-slate-300 mt-2">{link}</div>}
     </div>
@@ -641,75 +778,72 @@ function NewPasswordModal({token,onClose}){
   </Modal>)
 }
 
-/* Import Modal */
-function ImportModal({onClose,progress,message,details}) {
-  return (
-    <Modal title="Importing… " onClose={onClose} maxClass="max-w-lg">
-      <div className="space-y-3">
-        <div className="text-sm text-slate-300">{message || "Please wait — the import may take a few minutes depending on file size."}</div>
-        <div className="progress-wrap">
-          <div className="progress-bar" style={{width: `${progress||0}%`}}></div>
-        </div>
-        {details && <div className="text-xs text-slate-400">{details}</div>}
-      </div>
-    </Modal>
-  );
-}
-
-/* Persistence hook (adds dashboard + notes) */
-function usePersisted(email){
-  const fresh = () => ({
-    name:"",email:email||"",accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),
-    trades:[],
-    notes:[],
-    dashboardWidgets:{general:true,best:true,detailed:true},
-    dashboardOrder:['general','best','detailed']
-  });
-  const [state,setState]=useState(()=>{const s=loadState(email||getCurrent());return s||fresh()});
-  useEffect(()=>{
-    const loaded = loadState(email);
-    if (loaded) {
-      if (!loaded.dashboardOrder) loaded.dashboardOrder = ['general','best','detailed'];
-      if (!loaded.dashboardWidgets) loaded.dashboardWidgets = {general:true,best:true,detailed:true};
-      if (loaded.dashboardWidgets.best === undefined) loaded.dashboardWidgets.best = true;
-      if (!loaded.notes) loaded.notes = [];
-      setState(loaded);
-    } else {
-      setState(fresh());
-    }
-  }, [email]);
-  useEffect(()=>{if(!state||!state.email)return;saveState(state.email,state)},[state]);
-  return [state,setState];
-}
-
-/* App */
+/* ===================== App ===================== */
 function App(){
   const [currentEmail,setCurrentEmail]=useState(getCurrent());
   const [users,setUsers]=useState(loadUsers());
-  const [state,setState]=usePersisted(currentEmail);
+  // settings persisted within per-user state
+  const useFresh=(email)=>({
+    name: email.split("@")[0],
+    email,
+    accType:ACC_TYPES[1],
+    capital:0,
+    depositDate:todayISO(),
+    trades:[],
+    notes:[],
+    settings:{
+      dashboardOrder:["general","best","detailed"],
+      customBoxes:[],
+      strategyColors:{},
+    },
+    availableSymbols:[...DEFAULT_SYMBOLS],
+    availableStrategies:[...DEFAULT_STRATEGIES],
+  });
+  const [state,setState]=useState(()=>{const e=currentEmail||getCurrent();const s=e?loadState(e):null;return s || (currentEmail?useFresh(currentEmail):null)});
+
+  /* react to email changes */
+  useEffect(()=>{
+    if(!currentEmail) return;
+    const loaded=loadState(currentEmail);
+    setState(loaded || useFresh(currentEmail));
+  },[currentEmail]);
+
+  useEffect(()=>{ if(state?.email){ saveState(state.email,state) } },[state]);
+
   const [page,setPage]=useState("dashboard");
   const [showTrade,setShowTrade]=useState(false); const [editItem,setEditItem]=useState(null);
   const [showAcct,setShowAcct]=useState(false);
-  const [showCal,setShowCal]=useState(false); const now=new Date(); const [calView,setCalView]=useState("month"); const [calMonth,setCalMonth]=useState(now.getMonth()); const [calYear,setCalYear]=useState(now.getFullYear()); const [calSel,setCalSel]=useState(todayISO());
   const [collapsed,setCollapsed]=useState(false);
   const [showReset,setShowReset]=useState(false); const [resetToken,setResetToken]=useState("");
-
-  // Import
-  const [importing,setImporting]=useState(false);
-  const [importProgress,setImportProgress]=useState(0);
-  const [importMsg,setImportMsg]=useState("");
-  const [importDetails,setImportDetails]=useState("");
-  const fileRef = useRef(null);
+  const [importing,setImporting]=useState({visible:false,progress:0,msg:""});
 
   useEffect(()=>{const hash=new URLSearchParams(location.hash.slice(1));const tok=hash.get("reset"); if(tok){setResetToken(tok)}},[]);
-  useEffect(()=>{if(state&&(!state.name||!state.depositDate)) setShowAcct(false) /* no auto-popup for returning users */},[state?.email]);
+  // DO NOT show account setup automatically; we already seed defaults to skip it.
+
   useEffect(()=>{if(typeof emailjs !== 'undefined'){emailjs.init({publicKey: "YOUR_EMAILJS_PUBLIC_KEY"});}},[]);
 
-  const openTrades=state.trades.filter(t=> !t.exitType || t.exitType === "Trade In Progress").length;
-  const realized=state.trades.filter(t=>new Date(t.date)>=new Date(state.depositDate)&&t.exitType && t.exitType !== "Trade In Progress").map(t=>computeDollarPnL(t,state.accType)).filter(v=>v!==null&&isFinite(v)).reduce((a,b)=>a+b,0);
-  const effectiveCapital=state.capital+realized;
+  const openTrades=state?.trades.filter(t=> !t.exitType || t.exitType === "Trade In Progress").length||0;
+  const realized=state?.trades.filter(t=>new Date(t.date)>=new Date(state.depositDate)&&t.exitType && t.exitType !== "Trade In Progress").map(t=>computeDollarPnL(t,state.accType)).filter(v=>v!==null&&isFinite(v)).reduce((a,b)=>a+b,0)||0;
+  const effectiveCapital=(state?.capital||0)+realized;
 
   const onExport=()=>{const csv=toCSV(state.trades,state.accType);const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="Nitty_Gritty_Template_Export.csv";a.click();URL.revokeObjectURL(url)};
+
+  const onImport=()=>{
+    const input=document.createElement("input");
+    input.type="file"; input.accept=".csv,text/csv";
+    input.onchange=async (e)=>{
+      const file=e.target.files[0]; if(!file) return;
+      setImporting({visible:true,progress:5,msg:"Reading file… This may take a minute for large sheets."});
+      const text=await file.text();
+      setImporting({visible:true,progress:35,msg:"Parsing rows…"});
+      const newTrades=importCSVText(text,state, state.accType);
+      setImporting({visible:true,progress:65,msg:"Merging into history…"});
+      const merged=[...newTrades.map(t=>({...t, id: Math.random().toString(36).slice(2)})), ...state.trades];
+      setState({...state,trades:merged});
+      setTimeout(()=>setImporting({visible:false,progress:100,msg:""}),700);
+    };
+    input.click();
+  };
 
   const onLogout=()=>{saveCurrent("");setCurrentEmail("")};
 
@@ -720,118 +854,39 @@ function App(){
     window.google.accounts.id.renderButton(container,{theme:"outline",size:"large",text:"signin_with",shape:"pill"});
   };
 
-  const login=(email,password,setErr)=>{const u=users.find(x=>x.email.toLowerCase()===email.toLowerCase());
-    if(!u){ if(password==="__google__"){const nu=[...users,{name:email.split("@")[0],email,password:""}]; setUsers(nu); saveUsers(nu); const fresh={name:email.split("@")[0],email,accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[],notes:[],dashboardWidgets:{general:true,best:true,detailed:true},dashboardOrder:['general','best','detailed']}; saveState(email,fresh); saveCurrent(email); setCurrentEmail(email); return;}
-      setErr("No such user. Please sign up."); return;}
+  // login: Google always auto-creates locally to avoid manual sign-up on new browsers
+  const login=(email,password,setErr)=>{
+    const u=users.find(x=>x.email.toLowerCase()===email.toLowerCase());
+    if(!u){
+      if(password==="__google__"){
+        const freshUser={name:email.split("@")[0],email,password:""};
+        const nu=[...users,freshUser]; setUsers(nu); saveUsers(nu);
+        const freshState=useFresh(email); saveState(email,freshState); saveCurrent(email); setCurrentEmail(email); return;
+      }
+      setErr("No such user. Please sign up."); return;
+    }
     if(password!=="__google__" && u.password!==password){setErr("Wrong password.");return}
     setErr(""); saveCurrent(u.email); setCurrentEmail(u.email);
   };
 
-  const signup=(name,email,password,setErr)=>{if(users.some(x=>x.email.toLowerCase()===email.toLowerCase())){setErr("Email already registered.");return}
+  const signup=(name,email,password,setErr)=>{
+    if(users.some(x=>x.email.toLowerCase()===email.toLowerCase())){setErr("Email already registered.");return}
     const u={name,email,password}; const nu=[...users,u]; setUsers(nu); saveUsers(nu);
-    const fresh={name,email,accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[],notes:[],dashboardWidgets:{general:true,best:true,detailed:true},dashboardOrder:['general','best','detailed']}; saveState(email,fresh); saveCurrent(email); setCurrentEmail(email);
+    const fresh=useFresh(email); saveState(email,fresh); saveCurrent(email); setCurrentEmail(email);
   };
 
   const resetStart=()=>{setShowReset(true)};
 
-  const addOrUpdate=(draft)=>{const id=draft.id||Math.random().toString(36).slice(2); const arr=state.trades.slice(); const idx=arr.findIndex(t=>t.id===id); const rec={...draft,id}; if(idx>=0)arr[idx]=rec; else arr.unshift(rec); setState({...state,trades:arr}); setShowTrade(false); setEditItem(null)};
+  const addOrUpdate=(draft)=>{
+    const id=draft.id||Math.random().toString(36).slice(2); 
+    const arr=state.trades.slice(); 
+    const idx=arr.findIndex(t=>t.id===id); 
+    const rec={...draft,id}; 
+    if(idx>=0)arr[idx]=rec; else arr.unshift(rec); 
+    setState({...state,trades:arr}); 
+    setShowTrade(false); setEditItem(null)
+  };
   const delTrade=(id)=>setState({...state,trades:state.trades.filter(t=>t.id!==id)});
-
-  // Import handlers
-  const onImportClick=()=> fileRef.current?.click();
-
-  const normalize = s => String(s||"").trim().toLowerCase().replace(/[^a-z0-9]+/g,'');
-  const toISO = (v) => {
-    if (!v) return todayISO();
-    if (v instanceof Date && !isNaN(v)) return v.toISOString().slice(0,10);
-    const n = +v;
-    if (!isNaN(n) && n > 25569) { // Excel date (days since 1899-12-30)
-      const d = new Date(Math.round((n - 25569) * 86400 * 1000));
-      return d.toISOString().slice(0,10);
-    }
-    const d = new Date(v);
-    return isNaN(d) ? todayISO() : d.toISOString().slice(0,10);
-  };
-  const parseSide = (s) => (String(s).toUpperCase().includes('SELL')?'SELL':'BUY');
-
-  const importFile = async (file) => {
-    setImporting(true); setImportProgress(5);
-    setImportMsg("Please wait — the import will be successful in a few minutes based on file size.");
-    setImportDetails(`Reading ${file.name} …`);
-
-    const buf = await file.arrayBuffer();
-    setImportProgress(20);
-    const wb = XLSX.read(buf, {type:'array'});
-    const firstSheet = wb.SheetNames[0];
-    const sheet = wb.Sheets[firstSheet];
-    const rows = XLSX.utils.sheet_to_json(sheet, {defval:'', raw:false, cellDates:true});
-    setImportDetails(`Parsing ${rows.length} rows …`);
-
-    // header map
-    const keys = Object.keys(rows[0]||{});
-    const N = {};
-    for (const k of keys) N[normalize(k)] = k;
-
-    const pick = (cands) => {
-      for(const c of cands){ const nn = normalize(c); if (N[nn]) return N[nn]; }
-      // fall back by approximate
-      for(const k of keys){ if (cands.some(c=>normalize(k).includes(normalize(c)))) return k; }
-      return null;
-    };
-
-    const K = {
-      date: pick(['date','orderdate','tradedate','time']),
-      symbol: pick(['symbol','pair','instrument']),
-      side: pick(['side','action','type','buysell']),
-      lot: pick(['lot size','lotsize','lot','size','quantity','qty']),
-      entry: pick(['entry','entryprice','price in','pricein','open']),
-      exit: pick(['exit','exitprice','price out','priceout','close']),
-      tp1: pick(['tp1','takeprofit1','tp 1']),
-      tp2: pick(['tp2','takeprofit2','tp 2']),
-      sl: pick(['sl','stoploss','stop loss','stop']),
-      exittype: pick(['exit type','exittype','reason','status']),
-      pnl: pick(['p&l','pnl','profit','loss','pnl$','p&l$','pnlusd'])
-    };
-
-    const out = [];
-    const total = rows.length || 1;
-    rows.forEach((row, idx) => {
-      const I = K;
-      const t = {
-        id: Math.random().toString(36).slice(2),
-        date: toISO(I.date?row[I.date]:todayISO()),
-        // FIXED the ternary bug here:
-        symbol: String(I.symbol ? (row[I.symbol] || '') : '').toUpperCase() || 'XAUUSD',
-        side: parseSide(I.side ? row[I.side] : 'BUY'),
-        lotSize: num(I.lot ? row[I.lot] : 0.01) ?? 0.01,
-        entry: num(I.entry ? row[I.entry] : undefined),
-        exit: num(I.exit ? row[I.exit] : undefined),
-        tp1: num(I.tp1 ? row[I.tp1] : undefined),
-        tp2: num(I.tp2 ? row[I.tp2] : undefined),
-        sl: num(I.sl ? row[I.sl] : undefined),
-        strategy: "Imported",
-        exitType: (I.exittype ? String(row[I.exittype]).trim() : "") || (row[I.exit] ? "TP" : "Trade In Progress")
-      };
-      if (I.pnl) {
-        const imp = num(row[I.pnl]);
-        if (imp !== undefined) t.pnlOverride = imp; // allow editing later, used by computeDollarPnL
-      }
-      out.push(t);
-      if (idx % 50 === 0) setImportProgress(20 + Math.round(75 * (idx/total)));
-    });
-
-    setState(s=>({...s,trades:[...out.reverse(),...s.trades]})); // prepend imported
-    setImportProgress(100);
-    setImportDetails(`Imported ${out.length} trades.`);
-    setTimeout(()=>{ setImporting(false); setImportProgress(0); setImportMsg(""); setImportDetails(""); }, 800);
-  };
-
-  const handleFileChange = (e) => {
-    const f = e.target.files?.[0];
-    e.target.value = "";
-    if (!f) return;
-    importFile(f);
-  };
 
   if(resetToken){return <NewPasswordModal token={resetToken} onClose={()=>{setResetToken(""); location.hash=""}}/>}
   if(!currentEmail){return <><LoginView onLogin={login} onSignup={signup} initGoogle={initGoogle} resetStart={resetStart}/>{showReset&&<ResetModal email="" onClose={()=>setShowReset(false)}/>}</>}
@@ -850,53 +905,93 @@ function App(){
   const nav=(<>
     {navBtn("Dashboard","dashboard",IconHome)}
     {navBtn("Histories","histories",IconHistory)}
-    <button onClick={()=>{setShowCal(true);setCalView("month")}} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-700 hover:bg-slate-800"><IconCalendar/>Calendar</button>
-    {navBtn("Notes","notes",IconNote)}
+    <button onClick={()=>setPage("notes")} className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border ${page==="notes"?'bg-slate-700 border-slate-600':'border-slate-700 hover:bg-slate-800'}`}><IconNote/>Notes</button>
     {navBtn("Settings","settings",IconSettings)}
   </>);
 
   const logoSrc=LOGO_PUBLIC;
 
-  return(
-    <>
-      <input type="file" ref={fileRef} onChange={handleFileChange} accept=".csv,.xlsx,.xls" hidden />
-      {importing && <ImportModal onClose={()=>setImporting(false)} progress={importProgress} message={importMsg} details={importDetails}/>}
-      <AppShell capitalPanel={capitalPanel} nav={nav} logoSrc={logoSrc} onToggleSidebar={()=>setCollapsed(v=>!v)} onExport={onExport} onImportClick={onImportClick} onLogout={onLogout} sidebarCollapsed={collapsed}>
-        {page==="dashboard"&&(
-          <div className="space-y-4">
-            {state.dashboardOrder.map(k => state.dashboardWidgets[k] && (
-              k==='general' ? (
-                <div key="general">
-                  <div className="text-sm font-semibold">General statistics</div>
-                  <GeneralStats trades={state.trades} accType={state.accType} capital={state.capital} depositDate={state.depositDate}/>
-                </div>
-              ) : k==='best' ? (
-                <BestStrategyCard key="best" trades={state.trades} accType={state.accType}/>
-              ) : (
-                <DetailedStats key="detailed" trades={state.trades} accType={state.accType}/>
-              )
-            ))}
-          </div>
-        )}
-        {page==="histories"&&(<Histories trades={state.trades} accType={state.accType} onEdit={t=>{setEditItem(t);setShowTrade(true)}} onDelete={delTrade}/>)}
-        {page==="notes"&&(<NotesView notes={state.notes} trades={state.trades} accType={state.accType} onAdd={(n)=>setState({...state,notes:[n,...state.notes]})} onDelete={(id)=>setState({...state,notes:state.notes.filter(x=>x.id!==id)})}/>)}
-        {page==="settings"&&(<SettingsPanel
-          name={state.name} setName={v=>setState({...state,name:v})}
-          accType={state.accType} setAccType={v=>setState({...state,accType:v})}
-          capital={state.capital} setCapital={v=>setState({...state,capital:v||0})}
-          depositDate={state.depositDate} setDepositDate={v=>setState({...state,depositDate:v})}
-          email={state.email}
-          widgets={state.dashboardWidgets} setWidgets={w=>setState({...state,dashboardWidgets:w})}
-          order={state.dashboardOrder} setOrder={o=>setState({...state,dashboardOrder:o})}
-        />)}
+  // widgets rendering with drag-and-drop on dashboard
+  const renderWidget=(key, idx, dragHandlers)=> {
+    if(key==="general") return <div key={key} className="card" {...dragHandlers}><div className="drag-handle"><IconGrip/></div><GeneralStats trades={state.trades} accType={state.accType} capital={state.capital} depositDate={state.depositDate}/></div>;
+    if(key==="best") return <div key={key} className="card" {...dragHandlers}><div className="drag-handle"><IconGrip/></div><BestStrategy trades={state.trades} accType={state.accType} colors={state.settings.strategyColors}/></div>;
+    if(key==="detailed") return <div key={key} className="card" {...dragHandlers}><div className="drag-handle"><IconGrip/></div><DetailedStats trades={state.trades} accType={state.accType}/></div>;
+    // custom boxes
+    const box=state.settings.customBoxes.find(b=>b.id===key);
+    if(box) return <div key={key} className="card" {...dragHandlers}><div className="drag-handle"><IconGrip/></div><div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4"><div className="text-sm font-semibold mb-2">{box.title}</div><div className="text-slate-300">{box.content||"Empty"}</div></div></div>;
+    return null;
+  };
 
-        {showTrade&&(<TradeModal initial={editItem} onClose={()=>{setShowTrade(false);setEditItem(null)}} onSave={addOrUpdate} onDelete={delTrade} accType={state.accType}/>)}
-        {showAcct&&(<AccountSetupModal name={state.name} setName={v=>setState({...state,name:v})} accType={state.accType} setAccType={v=>setState({...state,accType:v})} capital={state.capital} setCapital={v=>setState({...state,capital:v||0})} depositDate={state.depositDate} setDepositDate={v=>setState({...state,depositDate:v})} onClose={()=>setShowAcct(false)} email={state.email}/>)}
-        {showCal&&(<CalendarModal onClose={()=>setShowCal(false)} trades={state.trades} view={calView} setView={setCalView} month={calMonth} setMonth={setCalMonth} year={calYear} setYear={setCalYear} selectedDate={calSel} setSelectedDate={setCalSel} accType={state.accType}/>)}
-        {showReset&&(<ResetModal email="" onClose={()=>setShowReset(false)}/>)}
-      </AppShell>
-    </>
+  const [dragIdx,setDragIdx]=useState(null);
+  const dashDragHandlers=(idx)=>({
+    draggable:true,
+    onDragStart:(e)=>{ setDragIdx(idx); e.dataTransfer.effectAllowed="move"; },
+    onDragOver:(e)=>{ e.preventDefault(); },
+    onDrop:(e)=>{ e.preventDefault(); if(dragIdx===null) return; if(dragIdx===idx) return;
+      const arr=[...state.settings.dashboardOrder]; const [m]=arr.splice(dragIdx,1); arr.splice(idx,0,m);
+      setState({...state, settings:{...state.settings, dashboardOrder:arr}}); setDragIdx(null);
+    }
+  });
+
+  return(
+    <AppShell capitalPanel={capitalPanel} nav={nav} logoSrc={logoSrc} onToggleSidebar={()=>setCollapsed(v=>!v)} onExport={onExport} onImport={onImport} onLogout={onLogout} sidebarCollapsed={collapsed}>
+
+      {page==="dashboard"&&(
+        <div className="space-y-4">
+          <div className="grid gap-4 dashboard-grid">
+            {state.settings.dashboardOrder.map((k,idx)=>renderWidget(k,idx,dashDragHandlers(idx)))}
+          </div>
+        </div>
+      )}
+
+      {page==="histories"&&(
+        <Histories trades={state.trades} accType={state.accType} onEdit={t=>{setEditItem(t);setShowTrade(true)}} onDelete={id=>delTrade(id)} strategyColors={state.settings.strategyColors}/>
+      )}
+
+      {page==="notes"&&(
+        <NotesTab notes={state.notes} setNotes={(n)=>setState({...state,notes:n})} trades={state.trades}/>
+      )}
+
+      {page==="settings"&&(
+        <CustomizeJournal 
+          settings={state.settings} 
+          setSettings={(s)=>setState({...state,settings:s})}
+          availableSymbols={state.availableSymbols}
+          setAvailableSymbols={(s)=>setState({...state,availableSymbols:s})}
+          availableStrategies={state.availableStrategies}
+          setAvailableStrategies={(s)=>setState({...state,availableStrategies:s})}
+        />
+      )}
+
+      {showTrade&&(
+        <TradeModal 
+          initial={editItem} 
+          onClose={()=>{setShowTrade(false);setEditItem(null)}} 
+          onSave={addOrUpdate} 
+          onDelete={id=>delTrade(id)} 
+          accType={state.accType}
+          symbols={state.availableSymbols}
+          strategies={state.availableStrategies}
+        />
+      )}
+
+      {showAcct&&(<AccountSetupModal name={state.name} setName={v=>setState({...state,name:v})} accType={state.accType} setAccType={v=>setState({...state,accType:v})} capital={state.capital} setCapital={v=>setState({...state,capital:v||0})} depositDate={state.depositDate} setDepositDate={v=>setState({...state,depositDate:v})} onClose={()=>setShowAcct(false)} email={state.email}/>)}
+
+      {showReset&&(<ResetModal email="" onClose={()=>setShowReset(false)}/>)}
+
+      {importing.visible && (
+        <Modal title="Importing CSV…" onClose={()=>setImporting({visible:false,progress:0,msg:""})} maxClass="max-w-md">
+          <div className="space-y-3">
+            <div className="text-sm text-slate-300">Please wait. Large files can take a few minutes to process depending on your device.</div>
+            <div className="w-full h-3 bg-slate-900 rounded-full overflow-hidden"><div className="h-3 bg-blue-600" style={{width:`${importing.progress}%`}}/></div>
+            <div className="text-slate-400 text-sm">{importing.msg}</div>
+          </div>
+        </Modal>
+      )}
+
+    </AppShell>
   )
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
