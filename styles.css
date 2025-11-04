@@ -1,37 +1,35 @@
 html,body,#root{height:100%}
-
 .hero{
-  background-image: url('./hero.jpg'),
-    radial-gradient(1200px 800px at 20% 20%, #1e3a8a 0%, #020617 60%);
+  background-image: url('./hero.jpg'), radial-gradient(1200px 800px at 20% 20%, #1e3a8a 0%, #020617 60%);
   background-size: cover;
   background-position: center;
 }
-
 .scroll-smooth::-webkit-scrollbar{height:8px;width:8px}
 .scroll-smooth::-webkit-scrollbar-thumb{background:#334155;border-radius:8px}
 
-/* Simple glow card for Notes’ trade references */
-.glow-card{
-  position: relative;
-  border-radius: 14px;
-  padding: 10px 12px;
-  background: rgba(2,6,23,0.75);
-  border: 1px solid #1f2a44;
-  overflow: hidden;
+/* dashboard drag cards */
+.dashboard-grid{
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
-.glow-card:before{
-  content:"";
-  position:absolute; inset:-1px;
-  border-radius: 14px;
-  background: conic-gradient(
-    from 180deg at 50% 50%,
-    rgba(56,189,248,.25), rgba(59,130,246,.25), rgba(147,51,234,.25), rgba(56,189,248,.25)
-  );
-  filter: blur(18px);
-  opacity:.35;
-  z-index:-1;
+.card{ position:relative; }
+.drag-handle{
+  position:absolute; top:8px; right:8px; opacity:.6; cursor:move; padding:2px 4px;
+  border:1px solid rgba(100,116,139,.6); border-radius:.5rem; background:rgba(15,23,42,.6);
 }
 
-/* Import modal progress bar */
-.progress-wrap{height:10px;border-radius:9999px;background:#0b1220;border:1px solid #24304d}
-.progress-bar{height:100%;border-radius:9999px;background:#2563eb}
+/* note editor */
+.toolbar-btn{
+  border:1px solid #334155; border-radius:.5rem; padding:.35rem .6rem; background:#0f172a; color:#e2e8f0;
+}
+.toolbar-select{
+  border:1px solid #334155; border-radius:.5rem; padding:.3rem .5rem; background:#0f172a; color:#e2e8f0;
+}
+.note-editor{
+  min-height:220px; border:1px solid #334155; background:#0b1220; padding:12px; border-radius:12px; overflow:auto;
+}
+.note-card{ min-height:180px; }
+
+/* Tailwind (keep at end so utilities compile) */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
