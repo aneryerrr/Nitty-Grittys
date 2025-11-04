@@ -31,41 +31,38 @@
   <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
 
+  <!-- XLS/CSV import (kept lightweight; safe no-op if unused) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- EmailJS (for Forgot Password, unchanged) -->
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
   <!-- Deploy version: bump this on each release -->
   <script>
-    window.__NG_BUILD = "2025-11-05.08"; // <- update this string when you push
+    window.__NG_BUILD = "2025-11-06.01";  /* ← bump this string when you push */
   </script>
 
   <!-- Babel standalone -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <!-- Robust bootstrap: compile script.js with Babel and inject as plain JS -->
+  <!-- Robust bootstrap: fetch script.js, transpile with Babel, inject as JS -->
   <script>
     (async function boot() {
-      const version = "?v=" + (window.__NG_BUILD || ("dev-" + Date.now()));
+      const v = "?v=" + (window.__NG_BUILD || ("dev-" + Date.now()));
 
-      // Load CSS with version param to defeat CDN caches
+      // Load styles with version param (defeat CDN caches)
       const css = document.createElement("link");
       css.rel = "stylesheet";
-      css.href = "./styles.css" + version;
+      css.href = "./styles.css" + v;
       document.head.appendChild(css);
 
-      // Safety shim so legacy bundles cannot crash the page during CDN churn
+      // Safety shim during CDN propagation
       if (typeof window.DetailedStats === "undefined") {
         window.DetailedStats = function () { return React.createElement("div"); };
       }
 
-      // (Optional) nuke any old app caches if present
       try {
-        if ("caches" in window) {
-          const keys = await caches.keys();
-          for (const k of keys) if (k.startsWith("ng-")) await caches.delete(k);
-        }
-      } catch {}
-
-      // Fetch -> transpile -> inject
-      try {
-        const res = await fetch("./script.js" + version, { cache: "no-store" });
+        const res = await fetch("./script.js" + v, { cache: "no-store" });
         if (!res.ok) throw new Error("HTTP " + res.status);
         const src = await res.text();
         const out = Babel.transform(src, { presets: ["env", "react"] }).code;
