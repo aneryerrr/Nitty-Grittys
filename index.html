@@ -5,17 +5,14 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nitty Gritty</title>
 
-  <!-- Strong no-cache for the HTML document -->
+  <!-- Strong no-cache for the HTML itself -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
 
-  <!-- Preconnects for CDNs (faster first paints) -->
+  <link rel="icon" href="./logo-ng.png" type="image/png" />
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-
-  <!-- Logo / Favicon -->
-  <link rel="icon" href="./logo-ng.png" type="image/png" />
 </head>
 <body class="bg-slate-950 text-slate-100">
   <div id="root"></div>
@@ -27,73 +24,64 @@
   </script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
-  <!-- React + ReactDOM (static urls are OK; they rarely change) -->
+  <!-- React + ReactDOM -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
-  <!-- Tailwind (CDN) -->
+  <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Build version for cache-busting (update this string on each deploy) -->
+  <!-- Deploy version: bump this on each release -->
   <script>
-    // CHANGE THIS on every deploy:
-    window.__NG_BUILD = "2025-11-05.07";
+    window.__NG_BUILD = "2025-11-05.08"; // <- update this string when you push
+  </script>
 
-    // Global safety shim so old bundles that reference `DetailedStats` don't crash.
-    // (If an older script still uses <DetailedStats/>, it will at least be defined.)
-    try {
-      if (typeof DetailedStats === "undefined") {
-        window.DetailedStats = function(){ return React.createElement("div"); };
-        // Make it a true global binding (not just window prop):
-        var DetailedStats = window.DetailedStats; // eslint-disable-line no-redeclare
+  <!-- Babel standalone -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Robust bootstrap: compile script.js with Babel and inject as plain JS -->
+  <script>
+    (async function boot() {
+      const version = "?v=" + (window.__NG_BUILD || ("dev-" + Date.now()));
+
+      // Load CSS with version param to defeat CDN caches
+      const css = document.createElement("link");
+      css.rel = "stylesheet";
+      css.href = "./styles.css" + version;
+      document.head.appendChild(css);
+
+      // Safety shim so legacy bundles cannot crash the page during CDN churn
+      if (typeof window.DetailedStats === "undefined") {
+        window.DetailedStats = function () { return React.createElement("div"); };
       }
-    } catch (e) {
-      // Fallback if strict mode interferes
-      window.DetailedStats = function(){ return React.createElement("div"); };
-    }
 
-    // Optional: clear any SW caches with "ng-" prefix (if a worker ever existed)
-    (async () => {
+      // (Optional) nuke any old app caches if present
       try {
         if ("caches" in window) {
           const keys = await caches.keys();
           for (const k of keys) if (k.startsWith("ng-")) await caches.delete(k);
         }
-      } catch (e) {}
-    })();
-  </script>
+      } catch {}
 
-  <!-- Bootstrap loader: inject CSS & App JS with a fresh ?v= param -->
-  <script>
-    (function bootstrap(){
-      const v = "?v=" + (window.__NG_BUILD || ("dev-" + Date.now()));
+      // Fetch -> transpile -> inject
+      try {
+        const res = await fetch("./script.js" + version, { cache: "no-store" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const src = await res.text();
+        const out = Babel.transform(src, { presets: ["env", "react"] }).code;
 
-      // inject stylesheet with version
-      const css = document.createElement("link");
-      css.rel = "stylesheet";
-      css.href = "./styles.css" + v;
-      document.head.appendChild(css);
-
-      // load Babel, then load app script (also versioned)
-      const loadBabel = () => new Promise((res, rej) => {
         const s = document.createElement("script");
-        s.src = "https://unpkg.com/@babel/standalone/babel.min.js";
-        s.onload = res; s.onerror = rej;
+        s.type = "text/javascript";
+        s.text = out;
         document.body.appendChild(s);
-      });
 
-      loadBabel().then(() => {
-        const app = document.createElement("script");
-        app.type = "text/babel";
-        app.setAttribute("data-presets", "env,react");
-        app.src = "./script.js" + v;
-        document.body.appendChild(app);
-      }).catch(() => {
-        const msg = document.createElement("pre");
-        msg.style.color = "#f99";
-        msg.textContent = "Failed to load compiler. Check network.";
-        document.body.appendChild(msg);
-      });
+        try { localStorage.setItem("__NG_BUILD_LAST", String(window.__NG_BUILD||"dev")); } catch {}
+      } catch (e) {
+        const box = document.createElement("pre");
+        box.style.cssText = "white-space:pre-wrap;color:#fecaca;background:#450a0a;padding:12px;border-radius:8px;margin:12px";
+        box.textContent = "Failed to bootstrap app: " + (e && (e.stack || e.message || e));
+        document.body.appendChild(box);
+      }
     })();
   </script>
 </body>
