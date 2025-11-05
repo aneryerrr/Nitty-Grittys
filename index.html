@@ -5,30 +5,29 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nitty Gritty</title>
 
-  <!-- Prevent aggressive caching on GH Pages/CDNs -->
+  <!-- Cache-busting to avoid stale JS/CSS on GH Pages -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
 
   <link rel="icon" href="./logo-ng.png" type="image/png" />
-  <link rel="stylesheet" href="./styles.css?v=2025-11-05-3" />
+  <link rel="stylesheet" href="./styles.css?v=2025-11-05-classic" />
 </head>
 <body class="bg-slate-950 text-slate-100">
   <div id="root"></div>
 
   <!-- Google Identity Services -->
   <script>
-    /* Keep your existing client id */
     window.GOOGLE_CLIENT_ID =
       "579461879935-qaj9nta2pfbrn17ss5idu2k39p4joir4.apps.googleusercontent.com";
   </script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
-  <!-- React + ReactDOM (production) -->
+  <!-- React + ReactDOM -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
-  <!-- Tailwind (CDN; fine for GH Pages) -->
+  <!-- Tailwind (CDN) -->
   <script src="https://cdn.tailwindcss.com"></script>
 
   <!-- SheetJS for .xls/.xlsx import -->
@@ -37,10 +36,10 @@
   <!-- EmailJS (Forgot Password) -->
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 
-  <!-- Babel standalone so we can keep a single JS file in GH pages -->
+  <!-- Babel so we can keep a single JSX file -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <!-- App -->
-  <script type="text/babel" src="./script.js?v=2025-11-05-3"></script>
+  <script type="text/babel" src="./script.js?v=2025-11-05-classic"></script>
 </body>
 </html>
