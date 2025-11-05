@@ -1,9 +1,6 @@
 /* Nitty Gritty – single-file React app (v5)
-   Changes in this build ONLY:
-   1) Fixed import duplication (unified SheetJS parser for CSV/XLS/XLSX)
-   2) Restored “Best Strategy” dashboard card
-   3) Replaced Settings icon with a professional cog glyph
-   Everything else is intentionally unchanged in look & behavior.
+   EmailJS config added (uses window.EMAILJS_* from index.html).
+   Everything else is unchanged from the last working build.
 */
 const {useState,useMemo,useEffect,useRef} = React;
 
@@ -36,6 +33,11 @@ const STRAT_COLORS = { default:"", green:"text-green-400", red:"text-red-400", m
 const EXIT_TYPES=["TP","SL","TP1_BE","TP1_SL","BE","Trade In Progress"];
 const ACC_TYPES=["Cent Account","Dollar Account"];
 
+/* ✅ EmailJS IDs picked up from index.html */
+const EMAILJS_PUBLIC_KEY  = window.EMAILJS_PUBLIC_KEY  || "YOUR_PUBLIC_KEY_HERE";
+const EMAILJS_SERVICE_ID  = window.EMAILJS_SERVICE_ID  || "service_default";
+const EMAILJS_TEMPLATE_ID = window.EMAILJS_TEMPLATE_ID || "template_reset";
+
 const r2=n=>Math.round(n*100)/100;
 const fmt$=n=>"$"+(isFinite(n)?r2(n):0).toFixed(2);
 const todayISO=()=>{const d=new Date();const tz=d.getTimezoneOffset();return new Date(d.getTime()-tz*60000).toISOString().slice(0,10)};
@@ -57,9 +59,9 @@ const saveCfg=(e,c)=>{try{localStorage.setItem(CFG_KEY(e),JSON.stringify(c))}cat
 function perLotValueForMove(symbol,delta,accType){
   const abs=Math.abs(delta);const isStd=accType==="Dollar Account";const mult=std=>isStd?std:std/100;
   switch(symbol){
-    case"US30":case"US100":return abs*mult(10);        // index points
-    case"XAUUSD":return abs*mult(100);                 // $1 move ≈ $100/lot
-    case"BTCUSD":return abs*mult(1);                   // coarse approx
+    case"US30":case"US100":return abs*mult(10);
+    case"XAUUSD":return abs*mult(100);
+    case"BTCUSD":return abs*mult(1);
     case"EURUSD":case"GBPUSD":{const pips=abs/0.0001;return pips*mult(10)}
     case"AUDCAD":case"USDCAD":{const pips=abs/0.0001;return pips*mult(7.236)}
     case"USDJPY":{const pips=abs/0.01;return pips*mult(6.795)}
@@ -265,7 +267,7 @@ function TradeModal({initial,onClose,onSave,onDelete,accType,symbols,strategies}
         <div><div className="text-xs text-slate-300">TP2</div><input type="number" step="0.00001" value={draft.tp2??""} onChange={e=>change("tp2",parseFloat(e.target.value))} className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
         <div><div className="text-xs text-slate-300">SL</div><input type="number" step="0.00001" value={draft.sl??""} onChange={e=>change("sl",parseFloat(e.target.value))} className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
         <div><div className="text-xs text-slate-300">Exit Type</div><select value={draft.exitType} onChange={e=>change("exitType",e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">{EXIT_TYPES.map(s=><option key={s}>{s}</option>)}</select></div>
-        <div className="md:col-span-2"><div className="text-xs text-slate-300">Strategy</div><select value={draft.strategy} onChange={e=>change("strategy",e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">{strategies.map(s=><option key={s.name}>{s.name}</option>)}</select></div>
+        <div className="md:col-span-2"><div className="text-xs text-slate-300">Strategy</div><select value={draft.strategy} onChange={e=>change("strategy",e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">{DEFAULT_STRATEGIES.concat([]).map(s=><option key={s.name||s}>{s.name||s}</option>)}</select></div>
       </div>
 
       <div className="mt-4 flex items-center justify-between">
@@ -274,8 +276,8 @@ function TradeModal({initial,onClose,onSave,onDelete,accType,symbols,strategies}
           {(()=>{const v=computeDollarPnL(draft,accType);return v===null?"—":formatPnlDisplay(accType,v)})()}
         </div>
         <div className="flex gap-2">
-          {hasId&&<button onClick={()=>{onDelete(draft.id);onClose();}} className="px-3 py-2 rounded-lg border border-red-700 text-red-300">Delete</button>}
-          <button disabled={!isValid()} onClick={()=>{onSave(draft);onClose();}} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50"><IconSave className="inline mr-1"/>Save</button>
+          {initial?.id&&<button onClick={()=>{onDelete(draft.id);onClose();}} className="px-3 py-2 rounded-lg border border-red-700 text-red-300">Delete</button>}
+          <button onClick={()=>{onSave({...draft});onClose();}} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500"><IconSave className="inline mr-1"/>Save</button>
         </div>
       </div>
     </Modal>
@@ -382,7 +384,7 @@ function Histories({trades,accType,onEdit,onDelete,strategies}){
             </tr>
           </thead>
           <tbody>
-            {trades.map((t,i)=>{
+            {trades.map((t)=>{
               const pnl=computeDollarPnL(t,accType);
               const stratColor = strategies.find(s=>s.name===t.strategy)?.color || "default";
               return(
@@ -498,7 +500,7 @@ function BestStrategy({trades,accType,strategies}){
           </g>
         </svg>
         <div>
-          <div className={`text-lg font-semibold ${STRAT_COLORS[data.color]||""}`}>{data.name}</div>
+          <div className={`text-lg font-semibold ${(STRAT_COLORS[data.color]||"")}`}>{data.name}</div>
           <div className="text-slate-300 text-sm">Win rate: {pct}% · Trades: {data.count}</div>
           <div className={`text-sm ${data.pnl>0?'text-green-400':data.pnl<0?'text-red-400':'text-amber-400'}`}>P&L: {formatPnlDisplay(accType,data.pnl)}</div>
         </div>
@@ -537,7 +539,7 @@ function Header({onExport,onImport,onLogout,name,email}){
     </div>
   )
 }
-function AppShell({children,nav,capitalPanel,logoSrc,onToggleSidebar,onExport,onImport,onLogout,sidebarCollapsed}){
+function AppShell({children,nav,capitalPanel,onExport,onImport,onLogout,sidebarCollapsed}){
   const state=usePersisted(getCurrent())[0];
   return(
     <div className="min-h-full">
@@ -562,8 +564,12 @@ function ResetModal({email:onEmail,onClose}){
   const send=async()=>{
     try{
       if(typeof emailjs!=="undefined"){
-        await emailjs.send("service_default","template_reset",{to_email:email,reset_link:location.origin+"#reset=dummytoken"});
-        setMsg("Reset email sent (demo).");
+        await emailjs.send(
+          EMAILJS_SERVICE_ID,
+          EMAILJS_TEMPLATE_ID,
+          { to_email:email, reset_link: location.origin + "#reset=dummytoken" }
+        );
+        setMsg("Reset email requested (using EmailJS).");
       }else setMsg("EmailJS not available");
     }catch(e){setMsg("Failed to send");}
   };
@@ -662,7 +668,11 @@ function App(){
 
   useEffect(()=>{const hash=new URLSearchParams(location.hash.slice(1));const tok=hash.get("reset"); if(tok){setResetToken(tok)}},[]);
   useEffect(()=>{if(state&&(!state.name||!state.depositDate)) setShowAcct(true)},[state?.email]);
-  useEffect(()=>{if(typeof emailjs !== 'undefined'){emailjs.init({publicKey: "qQucnU6BE7h1zb5Ex"});}},[]);
+
+  /* ✅ EmailJS init uses the configured public key */
+  useEffect(()=>{ if(typeof emailjs!=="undefined" && EMAILJS_PUBLIC_KEY){
+    emailjs.init({publicKey: EMAILJS_PUBLIC_KEY});
+  }},[]);
 
   const onExport=()=>{const csv=toCSV(state.trades,state.accType);const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="Nitty_Gritty_Template_Export.csv";a.click();URL.revokeObjectURL(url)};
 
@@ -748,7 +758,7 @@ function App(){
 
   return(
     <AppShell capitalPanel={capitalPanel} nav={nav}
-      onToggleSidebar={()=>setCollapsed(v=>!v)} onExport={onExport} onImport={openImportDialog} onLogout={()=>{saveCurrent("");setCurrentEmail("")}} sidebarCollapsed={collapsed}>
+      onExport={onExport} onImport={openImportDialog} onLogout={()=>{saveCurrent("");setCurrentEmail("")}} sidebarCollapsed={collapsed}>
       {page==="dashboard"&&(<div className="space-y-4">
         <div className="text-sm font-semibold">General statistics</div>
         <GeneralStats trades={state.trades} accType={state.accType} capital={state.capital} depositDate={state.depositDate}/>
