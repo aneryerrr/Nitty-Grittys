@@ -5,16 +5,13 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nitty Gritty</title>
 
-  <!-- Strong no-cache for the HTML itself -->
+  <!-- discourage html caching -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
 
   <link rel="icon" href="./logo-ng.png" type="image/png" />
-  <link rel="preconnect" href="https://unpkg.com" crossorigin>
-  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-
-  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./styles.css?v=2025-11-05-2" />
 </head>
 <body class="bg-slate-950 text-slate-100">
   <div id="root"></div>
@@ -26,23 +23,23 @@
   </script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
-  <!-- React + ReactDOM (UMD) -->
+  <!-- React + ReactDOM -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
-  <!-- Tailwind CDN (ok for GitHub Pages prototype) -->
+  <!-- Tailwind (CDN ok for GH Pages prototype) -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- SheetJS for XLS/XLSX support -->
+  <!-- SheetJS for .xls/.xlsx import -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <!-- EmailJS (Forgot Password) -->
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 
-  <!-- Babel (in-browser) -->
+  <!-- In-browser Babel -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <!-- App -->
-  <script type="text/babel" src="./script.js"></script>
+  <!-- App (cache-busted) -->
+  <script type="text/babel" src="./script.js?v=2025-11-05-2"></script>
 </body>
 </html>
