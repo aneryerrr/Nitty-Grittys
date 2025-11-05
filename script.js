@@ -1,12 +1,11 @@
 /* Nitty Gritty – tiny patch build
-   - Fix: page not loading due to missing handleFile + duplicate import inputs/listeners
-   - Notes: glyph Save icon + font-size tool only affects selection
-   - Import restored (CSV/XLS/XLSX) in user menu
-   - Remove "Account Setup" from left panel (still in Settings)
-   - Add trade: lot size stays under its label; added P&L Override ($)
+   - Fix: page crash from undefined handleFile (removed stray hidden input)
+   - Notes: Save button keeps one line; font-size tool affects only selection
+   - Import: CSV/XLS/XLSX (kept), single global picker
    - Everything else unchanged
 */
 const {useState,useMemo,useEffect,useRef} = React;
+
 /* ---------- Icons ---------- */
 const iconCls="h-5 w-5";
 const IconUser=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Z"/><path d="M4 20a8 8 0 0 1 16 0Z"/></svg>);
@@ -16,10 +15,11 @@ const IconUpload=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor
 const IconCalendar=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M8 3v4M16 3v4"/><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/></svg>);
 const IconPlus=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M12 5v14M5 12h14"/></svg>);
 const IconHistory=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M12 8v5l3 3"/><path d="M12 3a9 9 0 1 0 9 9"/><path d="M21 3v6h-6"/></svg>);
-const IconSettings=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.4 1V22a2 2 0 1 1-4 0v-.1a1.65 1.65 0 0 0-.4-1 1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1 6.24-3.1l.06.06A1.65 1.65 0 0 0 8 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .4-1V2a2 2 0 1 1 4 0v.1c0 .38.14.74.4 1 .26.26.62.4 1 .4.62 0 1.22-.25 1.64-.68l.06-.06A2 2 0 1 1 21.1 6.24l-.06.06c-.26.26-.4.62-.4 1s.14.74.4 1c.26.26.62.4 1 .4H22a2 2 0 1 1 0 4h-.1a1.65 1.65 0 0 0-1 .4 1.65 1.65 0 0 0-.6 1Z"/></svg>);
+const IconSettings=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.4 1V22a2 2 0 1 1-4 0v-.1a1.65 1.65 0 0 0-.4-1 1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1-.4H2a2 2 0 1 1 0-4h.1a1.65 1.65 0 0 0 1-.4 1.65 1.65 0 0 0 .6-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 1 1 6.24 2.9l.06.06A1.65 1.65 0 0 0 8 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .4-1V2a2 2 0 1 1 4 0v.1c0 .38.14.74.4 1 .26.26.62.4 1 .4.62 0 1.22-.25 1.64-.68l.06-.06A2 2 0 1 1 21.1 6.24l-.06.06c-.26.26-.4.62-.4 1s.14.74.4 1c.26.26.62.4 1 .4H22a2 2 0 1 1 0 4h-.1a1.65 1.65 0 0 0-1 .4 1.65 1.65 0 0 0-.6 1Z"/></svg>);
 const IconHome=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9v12h14V9"/></svg>);
 const IconNote=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M3 7a2 2 0 0 1 2-2h8l4 4v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M13 3v4h4"/></svg>);
 const IconSave=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l3 3v13a2 2 0 0 1-2 2Z"/><path d="M7 3v5h8"/><path d="M7 13h10"/><path d="M7 17h6"/></svg>);
+
 /* ---------- Data & Utils ---------- */
 const LOGO_PUBLIC="/logo-ng.png"; const LOGO_FALLBACK="./logo-ng.png.png";
 const DEFAULT_SYMBOLS=["XAUUSD","US100","US30","EURUSD","BTCUSD","AUDCAD","USDCAD","USDJPY","GBPUSD"];
@@ -47,6 +47,7 @@ const loadState=e=>{try{return JSON.parse(localStorage.getItem("ng_state_"+e)||"
 const saveState=(e,s)=>{try{localStorage.setItem("ng_state_"+e,JSON.stringify(s))}catch{}};
 const loadCfg=(e)=>{try{return JSON.parse(localStorage.getItem(CFG_KEY(e))||"null")}catch{return null}};
 const saveCfg=(e,c)=>{try{localStorage.setItem(CFG_KEY(e),JSON.stringify(c))}catch{}};
+
 /* Tick/pip → $ approximation */
 function perLotValueForMove(symbol,delta,accType){
   const abs=Math.abs(delta);const isStd=accType==="Dollar Account";const mult=std=>isStd?std:std/100;
@@ -66,7 +67,7 @@ function legPnL(symbol,side,entry,exit,lot,accType){
   return raw*s;
 }
 function computeDollarPnL(t,accType){
-  if (typeof t.pnlOverride === "number" && isFinite(t.pnlOverride)) return t.pnlOverride; // ← override
+  if (typeof t.pnlOverride === "number" && isFinite(t.pnlOverride)) return t.pnlOverride; // override
   if(t.exitType === "Trade In Progress") return null;
   if(typeof t.exit==="number"&&(!t.exitType||t.exitType==="TP")) return legPnL(t.symbol,t.side,t.entry,t.exit,t.lotSize,accType);
   const has=v=>typeof v==="number"&&isFinite(v);const{entry,sl,tp1,tp2,lotSize:lot}=t;
@@ -81,6 +82,7 @@ function computeDollarPnL(t,accType){
 }
 const formatPnlDisplay=(accType,v)=>accType==="Cent Account"?(r2(v*100)).toFixed(2)+" ¢":fmt$(v);
 const formatUnits=(accType,v)=>accType==="Dollar Account"?r2(v).toFixed(2):r2(v*100).toFixed(2);
+
 /* CSV export (unchanged) */
 function toCSV(rows,accType){
   const H=["Date","Symbol","Side","Lot Size","Entry","Exit","TP1","TP2","SL","Strategy","Exit Type","P&L","P&L (Units)"];
@@ -95,6 +97,7 @@ function toCSV(rows,accType){
   }
   return BOM+out.join(NL);
 }
+
 /* ---------- Small UI helpers ---------- */
 function Stat({label,value}){return(<div className="bg-slate-900/50 border border-slate-700 rounded-xl p-3"><div className="text-slate-400 text-xs">{label}</div><div className="text-2xl font-bold mt-1">{value}</div></div>)}
 function Th({children,className,...rest}){return(<th {...rest} className={(className?className+" ":"")+"px-4 py-3 text-left font-semibold text-slate-300"}>{children}</th>)}
@@ -112,6 +115,7 @@ function Modal({title,children,onClose,maxClass}){
     </div>
   )
 }
+
 /* ---------- Error Boundary ---------- */
 class ErrorBoundary extends React.Component{
   constructor(p){super(p);this.state={err:null}}
@@ -121,6 +125,7 @@ class ErrorBoundary extends React.Component{
     return this.props.children;
   }
 }
+
 /* ---------- Account Setup Modal (unchanged) ---------- */
 function AccountSetupModal({name,setName,accType,setAccType,capital,setCapital,depositDate,setDepositDate,onClose,email}){
   const [tab,setTab]=useState("personal");
@@ -157,7 +162,8 @@ function AccountSetupModal({name,setName,accType,setAccType,capital,setCapital,d
     </Modal>
   )
 }
-/* ---------- Settings Panel (Customize Journal inside) ---------- */
+
+/* ---------- Settings Panel (with Customize tab) ---------- */
 function SettingsPanel({name,setName,accType,setAccType,capital,setCapital,depositDate,setDepositDate,email,cfg,setCfg}){
   const [tab,setTab]=useState("personal");
   const [pw1,setPw1]=useState(""); const [pw2,setPw2]=useState(""); const [msg,setMsg]=useState("");
@@ -234,14 +240,15 @@ function SettingsPanel({name,setName,accType,setAccType,capital,setCapital,depos
     </div>
   )
 }
-/* ---------- Trade Modal (adds P&L Override) ---------- */
+
+/* ---------- Trade Modal (P&L Override kept) ---------- */
 function TradeModal({initial,onClose,onSave,onDelete,accType,symbols,strategies}){
   const i=initial||{}; const [symbol,setSymbol]=useState(i.symbol||symbols[0]); const [side,setSide]=useState(i.side||"BUY");
   const [date,setDate]=useState(i.date||todayISO()); const [lotSize,setLotSize]=useState(i.lotSize??0.01);
   const [entry,setEntry]=useState(i.entry??""); const [exit,setExit]=useState(i.exit??"");
   const [tp1,setTp1]=useState(i.tp1??""); const [tp2,setTp2]=useState(i.tp2??""); const [sl,setSl]=useState(i.sl??"");
   const [strategy,setStrategy]=useState(i.strategy||(strategies[0]?.name||"")); const [exitType,setExitType]=useState(i.exitType||"TP");
-  const [pnlOverride,setPnlOverride]=useState(i.pnlOverride ?? ""); // NEW
+  const [pnlOverride,setPnlOverride]=useState(i.pnlOverride ?? "");
   const num=v=>(v===""||v===undefined||v===null)?undefined:parseFloat(v);
   const draft=useMemo(()=>({id:i.id,date,symbol,side,lotSize:parseFloat(lotSize||0),entry:num(entry),exit:num(exit),tp1:num(tp1),tp2:num(tp2),sl:num(sl),strategy,exitType,pnlOverride:(pnlOverride===""?undefined:parseFloat(pnlOverride))}),[i.id,date,symbol,side,lotSize,entry,exit,tp1,tp2,sl,strategy,exitType,pnlOverride]);
   const preview=useMemo(()=>{const v=computeDollarPnL(draft,accType);if(v===null||!isFinite(v))return"-";return`${formatPnlDisplay(accType,v)} (${formatUnits(accType,v)})`},[draft,accType]);
@@ -280,6 +287,7 @@ function TradeModal({initial,onClose,onSave,onDelete,accType,symbols,strategies}
     </Modal>
   )
 }
+
 /* ---------- Calendar (unchanged) ---------- */
 function CalendarModal({onClose,trades,view,setView,month,setMonth,year,setYear,selectedDate,setSelectedDate,accType}){
   const monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -332,6 +340,7 @@ function CalendarModal({onClose,trades,view,setView,month,setMonth,year,setYear,
     </Modal>
   )
 }
+
 /* ---------- Dashboard blocks ---------- */
 function GeneralStats({trades,accType,capital,depositDate}){
   const realized=trades.filter(t=>new Date(t.date)>=new Date(depositDate)&&t.exitType && t.exitType !== "Trade In Progress");
@@ -399,6 +408,7 @@ function DetailedStats({trades,accType}){
         </tr>))}</tbody></table></div>
   </div>)
 }
+
 /* ---------- Histories ---------- */
 function Histories({trades,accType,onEdit,onDelete,strategies}){
   return(
@@ -444,6 +454,7 @@ function Histories({trades,accType,onEdit,onDelete,strategies}){
     </div>
   )
 }
+
 /* ---------- Notes ---------- */
 function NotesPanel({trades}){
   const [items,setItems]=useState(()=>{try{return JSON.parse(localStorage.getItem("ng_notes")||"[]")}catch{return[]}});
@@ -461,7 +472,9 @@ function NotesPanel({trades}){
           <div key={n.id} className="bg-slate-900/50 border border-slate-700 rounded-xl p-3 flex flex-col">
             <div className="font-semibold mb-1 truncate">{n.title}</div>
             <div className="text-slate-400 text-xs mb-2">{n.date}</div>
-            <div className="text-sm whitespace-pre-wrap flex-1"><div dangerouslySetInnerHTML={{__html:n.content}}/></div>
+            <div className="text-sm whitespace-pre-wrap flex-1">
+              <div dangerouslySetInnerHTML={{__html:n.content}}/>
+            </div>
             <div className="mt-3 flex gap-2">
               <button onClick={()=>{setDraft(n);setShow(true)}} className="px-2 py-1 rounded-lg border border-slate-700">✎</button>
               <button onClick={()=>del(n.id)} className="px-2 py-1 rounded-lg border border-red-700 text-red-300">✕</button>
@@ -508,10 +521,7 @@ function NoteModal({onClose,onSave,initial,trades}){
                 <option value="13px">Body</option>
               </select>
             </div>
-            <div
-              ref={el=>{editorRef.current=el}}
-              contentEditable
-              className="mt-2 min-h-[200px] h-[260px] bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 overflow-auto"></div>
+            <div ref={el=>{editorRef.current=el}} contentEditable className="mt-2 min-h-[200px] h-[260px] bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 overflow-auto"></div>
           </div>
         </div>
         <div className="space-y-3">
@@ -537,6 +547,7 @@ function NoteModal({onClose,onSave,initial,trades}){
     </Modal>
   )
 }
+
 /* ---------- Header / Shell ---------- */
 function UserMenu({onExport,onImport,onLogout}){
   const [open,setOpen]=useState(false);
@@ -576,6 +587,7 @@ function AppShell({children,capitalPanel,nav,logoSrc,onToggleSidebar,onExport,on
     </div>
   </div>)
 }
+
 /* ---------- Login & Forgot Password (unchanged) ---------- */
 function parseJwt(token){try{return JSON.parse(atob(token.split('.')[1]))}catch{return null}}
 function ResetModal({email,onClose}){
@@ -662,6 +674,7 @@ function LoginView({onLogin,onSignup,initGoogle,resetStart}){
     </div>
   </div>)
 }
+
 /* ---------- App ---------- */
 function usePersisted(email){
   const fresh = () => ({name:"",email:email||"",accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[]});
@@ -682,13 +695,14 @@ function App(){
   const [showCal,setShowCal]=useState(false); const now=new Date(); const [calView,setCalView]=useState("month"); const [calMonth,setCalMonth]=useState(now.getMonth()); const [calYear,setCalYear]=useState(now.getFullYear()); const [calSel,setCalSel]=useState(todayISO());
   const [collapsed,setCollapsed]=useState(false);
   const [showReset,setShowReset]=useState(false); const [resetToken,setResetToken]=useState("");
-  const fileRef=useRef(null); // hidden file input (kept)
+
   useEffect(()=>{const hash=new URLSearchParams(location.hash.slice(1));const tok=hash.get("reset"); if(tok){setResetToken(tok)}},[]);
   useEffect(()=>{if(state&&(!state.name||!state.depositDate)) setShowAcct(true)},[state?.email]);
   useEffect(()=>{if(typeof emailjs !== 'undefined'){emailjs.init({publicKey: "qQucnU6BE7h1zb5Ex"});}},[]);
+
   const onExport=()=>{const csv=toCSV(state.trades,state.accType);const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="Nitty_Gritty_Template_Export.csv";a.click();URL.revokeObjectURL(url)};
 
-  // ---------- Import: use ONE hidden input (singleton) and a safe handler ----------
+  /* ---- Import: single global file input, supports .csv/.xls/.xlsx ---- */
   const __importEl = (window.__ngImportEl ||= (() => {
     const el = document.createElement('input');
     el.type = 'file';
@@ -697,10 +711,8 @@ function App(){
     document.body.appendChild(el);
     return el;
   })());
+  function openImportDialog(){ __importEl.value = ''; __importEl.click(); }
 
-  function openImportDialog() { __importEl.value = ''; __importEl.click(); }
-
-  // shared CSV parsing helpers
   function splitCSVLine(line){
     const out=[], n=line.length; let i=0, q=false, cur='';
     while(i<n){
@@ -752,35 +764,25 @@ function App(){
       return t;
     });
   }
-
-  // unified handler (used by both the JSX input and the singleton)
-  function handleFile(ev){
-    const f = ev.target.files?.[0];
-    if(!f) return;
-    (async () => {
+  if (!__importEl.__ngBound){
+    __importEl.addEventListener('change', async (e)=>{
+      const f = e.target.files?.[0]; if(!f) return;
       const ext = (f.name.split('.').pop()||'').toLowerCase();
       let rows;
-      if (ext === 'csv') {
+      if(ext === 'csv'){
         rows = csvToRows(await f.text());
-      } else {
-        if (typeof XLSX === 'undefined') { alert('XLS/XLSX import requires SheetJS.'); return; }
+      }else{
+        if(typeof XLSX === 'undefined'){ alert('XLS/XLSX import requires SheetJS.'); return; }
         const wb = XLSX.read(await f.arrayBuffer(), { type:'array' });
         const ws = wb.Sheets[wb.SheetNames[0]];
         rows = XLSX.utils.sheet_to_json(ws, { defval:'' });
       }
       const trades = rowsToTrades(rows);
       setState(s => ({ ...s, trades: [...trades.reverse(), ...s.trades] }));
-      ev.target.value = ''; // allow re-importing same file
-    })();
-  }
-
-  // attach once to the singleton input
-  if (!__importEl.__ngBound) {
-    __importEl.addEventListener('change', handleFile);
+    });
     __importEl.__ngBound = true;
   }
 
-  // (keep the extra hidden input from JSX; it won’t be used, but no harm)
   const onLogout=()=>{saveCurrent("");setCurrentEmail("")};
   const initGoogle=(container,onEmail)=>{
     const clientId=window.GOOGLE_CLIENT_ID;
@@ -824,37 +826,34 @@ function App(){
     {navBtn("Notes","notes",IconNote)}
     {navBtn("Settings","settings",IconSettings)}
   </>);
-  const logoSrc=LOGO_PUBLIC;
 
+  const logoSrc=LOGO_PUBLIC;
   return(
-    <>
-      {/* Kept (not used for menu import, but harmless). Now wired with a real handler to avoid ReferenceError */}
-      <input ref={fileRef} type="file" accept=".csv,.xls,.xlsx" className="hidden" onChange={handleFile}/>
-      <AppShell capitalPanel={capitalPanel} nav={nav} logoSrc={logoSrc}
-        onToggleSidebar={()=>setCollapsed(v=>!v)} onExport={onExport} onImport={openImportDialog} onLogout={onLogout} sidebarCollapsed={collapsed}>
-        {page==="dashboard"&&(<div className="space-y-4">
-          <div className="text-sm font-semibold">General statistics</div>
-          <GeneralStats trades={state.trades} accType={state.accType} capital={state.capital} depositDate={state.depositDate}/>
-          <DetailedStats trades={state.trades} accType={state.accType}/>
-          <BestStrategy trades={state.trades} accType={state.accType} strategies={cfg.strategies}/>
-        </div>)}
-        {page==="histories"&&(<Histories trades={state.trades} accType={state.accType} onEdit={t=>{setEditItem(t);setShowTrade(true)}} onDelete={delTrade} strategies={cfg.strategies}/>)}
-        {page==="notes"&&(<NotesPanel trades={state.trades}/>)}
-        {page==="settings"&&(<SettingsPanel
-          name={state.name} setName={v=>setState({...state,name:v})}
-          accType={state.accType} setAccType={v=>setState({...state,accType:v})}
-          capital={state.capital} setCapital={v=>setState({...state,capital:v||0})}
-          depositDate={state.depositDate} setDepositDate={v=>setState({...state,depositDate:v})}
-          email={state.email}
-          cfg={cfg} setCfg={(n)=>{setCfg(n); saveCfg(state.email,n)}}
-        />)}
-        {showTrade&&(<TradeModal initial={editItem} onClose={()=>{setShowTrade(false);setEditItem(null)}} onSave={addOrUpdate} onDelete={delTrade} accType={state.accType} symbols={cfg.symbols} strategies={cfg.strategies}/>)}
-        {showAcct&&(<AccountSetupModal name={state.name} setName={v=>setState({...state,name:v})} accType={state.accType} setAccType={v=>setState({...state,accType:v})} capital={state.capital} setCapital={v=>setState({...state,capital:v||0})} depositDate={state.depositDate} setDepositDate={v=>setState({...state,depositDate:v})} onClose={()=>setShowAcct(false)} email={state.email}/>)}
-        {showCal&&(<CalendarModal onClose={()=>setShowCal(false)} trades={state.trades} view={calView} setView={setCalView} month={calMonth} setMonth={setCalMonth} year={calYear} setYear={setCalYear} selectedDate={calSel} setSelectedDate={setCalSel} accType={state.accType}/>)}
-        {showReset&&(<ResetModal email="" onClose={()=>setShowReset(false)}/>)}
-      </AppShell>
-    </>
+    <AppShell capitalPanel={capitalPanel} nav={nav} logoSrc={logoSrc}
+      onToggleSidebar={()=>setCollapsed(v=>!v)} onExport={onExport} onImport={openImportDialog} onLogout={onLogout} sidebarCollapsed={collapsed}>
+      {page==="dashboard"&&(<div className="space-y-4">
+        <div className="text-sm font-semibold">General statistics</div>
+        <GeneralStats trades={state.trades} accType={state.accType} capital={state.capital} depositDate={state.depositDate}/>
+        <DetailedStats trades={state.trades} accType={state.accType}/>
+        <BestStrategy trades={state.trades} accType={state.accType} strategies={cfg.strategies}/>
+      </div>)}
+      {page==="histories"&&(<Histories trades={state.trades} accType={state.accType} onEdit={t=>{setEditItem(t);setShowTrade(true)}} onDelete={delTrade} strategies={cfg.strategies}/>)}
+      {page==="notes"&&(<NotesPanel trades={state.trades}/>)}
+      {page==="settings"&&(<SettingsPanel
+        name={state.name} setName={v=>setState({...state,name:v})}
+        accType={state.accType} setAccType={v=>setState({...state,accType:v})}
+        capital={state.capital} setCapital={v=>setState({...state,capital:v||0})}
+        depositDate={state.depositDate} setDepositDate={v=>setState({...state,depositDate:v})}
+        email={state.email}
+        cfg={cfg} setCfg={(n)=>{setCfg(n); saveCfg(state.email,n)}}
+      />)}
+      {showTrade&&(<TradeModal initial={editItem} onClose={()=>{setShowTrade(false);setEditItem(null)}} onSave={addOrUpdate} onDelete={delTrade} accType={state.accType} symbols={cfg.symbols} strategies={cfg.strategies}/>)}
+      {showAcct&&(<AccountSetupModal name={state.name} setName={v=>setState({...state,name:v})} accType={state.accType} setAccType={v=>setState({...state,accType:v})} capital={state.capital} setCapital={v=>setState({...state,capital:v||0})} depositDate={state.depositDate} setDepositDate={v=>setState({...state,depositDate:v})} onClose={()=>setShowAcct(false)} email={state.email}/>)}
+      {showCal&&(<CalendarModal onClose={()=>setShowCal(false)} trades={state.trades} view={calView} setView={setCalView} month={calMonth} setMonth={setCalMonth} year={calYear} setYear={setCalYear} selectedDate={calSel} setSelectedDate={setCalSel} accType={state.accType}/>)}
+      {showReset&&(<ResetModal email="" onClose={()=>setShowReset(false)}/>)}
+    </AppShell>
   )
 }
+
 /* -------- Mount -------- */
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
