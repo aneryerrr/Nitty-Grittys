@@ -1,8 +1,9 @@
-/* Nitty Gritty – tiny patch build
-   - Fix: page crash from undefined handleFile (removed stray hidden input)
-   - Notes: Save button keeps one line; font-size tool affects only selection
-   - Import: CSV/XLS/XLSX (kept), single global picker
-   - Everything else unchanged
+/* Nitty Gritty – patch build
+   Fixes:
+   - Import mapping (CSV/XLS/XLSX) robust header & number parsing
+   - Best Strategy fallback when no closed trades yet
+   - Settings icon rendering cleanup
+   Everything else unchanged.
 */
 const {useState,useMemo,useEffect,useRef} = React;
 
@@ -15,7 +16,15 @@ const IconUpload=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor
 const IconCalendar=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M8 3v4M16 3v4"/><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/></svg>);
 const IconPlus=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M12 5v14M5 12h14"/></svg>);
 const IconHistory=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M12 8v5l3 3"/><path d="M12 3a9 9 0 1 0 9 9"/><path d="M21 3v6h-6"/></svg>);
-const IconSettings=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.4 1V22a2 2 0 1 1-4 0v-.1a1.65 1.65 0 0 0-.4-1 1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1-.4H2a2 2 0 1 1 0-4h.1a1.65 1.65 0 0 0 1-.4 1.65 1.65 0 0 0 .6-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 1 1 6.24 2.9l.06.06A1.65 1.65 0 0 0 8 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .4-1V2a2 2 0 1 1 4 0v.1c0 .38.14.74.4 1 .26.26.62.4 1 .4.62 0 1.22-.25 1.64-.68l.06-.06A2 2 0 1 1 21.1 6.24l-.06.06c-.26.26-.4.62-.4 1s.14.74.4 1c.26.26.62.4 1 .4H22a2 2 0 1 1 0 4h-.1a1.65 1.65 0 0 0-1 .4 1.65 1.65 0 0 0-.6 1Z"/></svg>);
+/* CLEAN cog (fixes weird joins) */
+const IconSettings = (p) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+       strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"
+       className={iconCls} {...p}>
+    <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/>
+    <path d="M19.4 15a2 2 0 0 0 .33 2.18l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A2 2 0 0 0 15 19.4a2 2 0 0 0-1 .6 2 2 0 0 0-.4 1V22a2 2 0 1 1-4 0v-.1a2 2 0 0 0-.4-1 2 2 0 0 0-1-.6 2 2 0 0 0-2.18.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A2 2 0 0 0 4.6 15a2 2 0 0 0-.6-1 2 2 0 0 0-1-.4H2a2 2 0 1 1 0-4h.1a2 2 0 0 0 1-.4 2 2 0 0 0 .6-1 2 2 0 0 0-.33-2.18l-.06-.06A2 2 0 1 1 6.24 2.9l.06.06A2 2 0 0 0 8 4.6a2 2 0 0 0 1-.6 2 2 0 0 0 .4-1V2a2 2 0 1 1 4 0v.1c0 .38.14.74.4 1 .26.26.62.4 1 .4.62 0 1.22-.25 1.64-.68l.06-.06A2 2 0 1 1 21.1 6.24l-.06.06c-.26.26-.4.62-.4 1s.14.74.4 1c.26.26.62.4 1 .4H22a2 2 0 1 1 0 4h-.1a2 2 0 0 0-1 .4 2 2 0 0 0-.6 1Z"/>
+  </svg>
+);
 const IconHome=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9v12h14V9"/></svg>);
 const IconNote=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M3 7a2 2 0 0 1 2-2h8l4 4v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M13 3v4h4"/></svg>);
 const IconSave=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l3 3v13a2 2 0 0 1-2 2Z"/><path d="M7 3v5h8"/><path d="M7 13h10"/><path d="M7 17h6"/></svg>);
@@ -67,7 +76,7 @@ function legPnL(symbol,side,entry,exit,lot,accType){
   return raw*s;
 }
 function computeDollarPnL(t,accType){
-  if (typeof t.pnlOverride === "number" && isFinite(t.pnlOverride)) return t.pnlOverride; // override
+  if (typeof t.pnlOverride === "number" && isFinite(t.pnlOverride)) return t.pnlOverride;
   if(t.exitType === "Trade In Progress") return null;
   if(typeof t.exit==="number"&&(!t.exitType||t.exitType==="TP")) return legPnL(t.symbol,t.side,t.entry,t.exit,t.lotSize,accType);
   const has=v=>typeof v==="number"&&isFinite(v);const{entry,sl,tp1,tp2,lotSize:lot}=t;
@@ -82,6 +91,97 @@ function computeDollarPnL(t,accType){
 }
 const formatPnlDisplay=(accType,v)=>accType==="Cent Account"?(r2(v*100)).toFixed(2)+" ¢":fmt$(v);
 const formatUnits=(accType,v)=>accType==="Dollar Account"?r2(v).toFixed(2):r2(v*100).toFixed(2);
+
+/* ---------- CSV/XLS Import helpers (robust) ---------- */
+function splitCSVLine(line){
+  const out=[], n=line.length; let i=0, q=false, cur='';
+  while(i<n){
+    const c=line[i];
+    if(q){
+      if(c === '"' && line[i+1] === '"'){ cur+='"'; i+=2; continue; }
+      if(c === '"'){ q=false; i++; continue; }
+      cur += c; i++; continue;
+    }else{
+      if(c === '"'){ q=true; i++; continue; }
+      if(c === ','){ out.push(cur); cur=''; i++; continue; }
+      cur += c; i++; continue;
+    }
+  }
+  out.push(cur); return out;
+}
+function csvToRows(text){
+  const t=text.replace(/^\uFEFF/,'');
+  const lines=t.split(/\r?\n/).filter(l=>l.trim().length);
+  if(!lines.length) return [];
+  const headers=splitCSVLine(lines[0]).map(h=>h.trim());
+  return lines.slice(1).map(line=>{
+    const cells=splitCSVLine(line), o={};
+    headers.forEach((h,i)=>o[h]=(cells[i]??'').trim());
+    return o;
+  });
+}
+const normKey = k => (k||'').toString().toLowerCase().replace(/[^a-z0-9]/g,'');
+const toNumber = v => {
+  if (v===undefined || v===null || v==='') return undefined;
+  if (typeof v === 'number') return Number.isFinite(v) ? v : undefined;
+  let s = String(v).trim();
+  if (/^[-–—]$/.test(s)) return undefined;
+  if (/^\d{1,3}(\.\d{3})*,\d+$/.test(s)) s = s.replace(/\./g,'').replace(',', '.');
+  else s = s.replace(/,/g,'');
+  s = s.replace(/[^\d.\-]/g,'');
+  if (s === '' || s === '-' || s === '.') return undefined;
+  const n = parseFloat(s);
+  return Number.isFinite(n) ? n : undefined;
+};
+function pick(row, aliases){
+  const map = {};
+  for (const [k,v] of Object.entries(row||{})) map[normKey(k)] = v;
+  for (const a of aliases){
+    const v = map[normKey(a)];
+    if (v !== undefined && v !== '') return v;
+  }
+  return undefined;
+}
+function rowsToTrades(rows){
+  return rows.map(r=>{
+    const date      = pick(r, ['Date','Trade Date','date']);
+    const symbol    = pick(r, ['Symbol','Pair','Instrument','Asset','Ticker','symbol']);
+    const sideRaw   = pick(r, ['Side','Direction','Action','Buy/Sell','Position','side']);
+    const lot       = pick(r, ['Lot Size','Lots','Lot','Quantity','Qty','Size','lotsize']);
+    const entry     = pick(r, ['Entry','Entry Price','Open','Open Price','entry']);
+    const exit      = pick(r, ['Exit','Exit Price','Close','Close Price','exit']);
+    const tp1       = pick(r, ['TP1','Take Profit 1','TP 1','tp1']);
+    const tp2       = pick(r, ['TP2','Take Profit 2','TP 2','tp2']);
+    const sl        = pick(r, ['SL','Stop Loss','Stop','sl']);
+    const strategy  = pick(r, ['Strategy','Setup','Playbook','strategy']);
+    const exitTypeR = pick(r, ['Exit Type','Status','Outcome','Result','exittype']);
+
+    const normSide = (sideRaw||'').toString().toUpperCase().includes('SELL') ? 'SELL' : 'BUY';
+    const et = (exitTypeR||'').toString().toLowerCase().replace(/\s/g,'');
+    let exitType = 'Trade In Progress';
+    if (['tp','takeprofit','target','tp2','tp1','tp1_be','tp1be'].includes(et)) exitType = et.startsWith('tp1') ? 'TP1_BE' : 'TP';
+    if (['sl','stop','stoploss'].includes(et)) exitType = 'SL';
+    if (['be','breakeven'].includes(et)) exitType = 'BE';
+    if (['tp1sl','tp1_sl'].includes(et)) exitType = 'TP1_SL';
+    if (['closed','done','finished'].includes(et)) exitType = 'TP';
+
+    const id = Math.random().toString(36).slice(2);
+    return {
+      id,
+      date: (date||todayISO()).toString().slice(0,10),
+      symbol: (symbol||'').toString().toUpperCase(),
+      side: normSide,
+      lotSize: toNumber(lot) ?? 0.01,
+      entry: toNumber(entry),
+      exit: toNumber(exit),
+      tp1: toNumber(tp1),
+      tp2: toNumber(tp2),
+      sl: toNumber(sl),
+      strategy: strategy || DEFAULT_STRATEGIES[0].name,
+      exitType
+    };
+  });
+}
 
 /* CSV export (unchanged) */
 function toCSV(rows,accType){
@@ -126,7 +226,7 @@ class ErrorBoundary extends React.Component{
   }
 }
 
-/* ---------- Account Setup Modal (unchanged) ---------- */
+/* ---------- Account Setup Modal ---------- */
 function AccountSetupModal({name,setName,accType,setAccType,capital,setCapital,depositDate,setDepositDate,onClose,email}){
   const [tab,setTab]=useState("personal");
   const [pw1,setPw1]=useState(""); const [pw2,setPw2]=useState(""); const [msg,setMsg]=useState("");
@@ -163,7 +263,7 @@ function AccountSetupModal({name,setName,accType,setAccType,capital,setCapital,d
   )
 }
 
-/* ---------- Settings Panel (with Customize tab) ---------- */
+/* ---------- Settings Panel (Customize inside) ---------- */
 function SettingsPanel({name,setName,accType,setAccType,capital,setCapital,depositDate,setDepositDate,email,cfg,setCfg}){
   const [tab,setTab]=useState("personal");
   const [pw1,setPw1]=useState(""); const [pw2,setPw2]=useState(""); const [msg,setMsg]=useState("");
@@ -241,7 +341,7 @@ function SettingsPanel({name,setName,accType,setAccType,capital,setCapital,depos
   )
 }
 
-/* ---------- Trade Modal (P&L Override kept) ---------- */
+/* ---------- Trade Modal (incl. P&L Override) ---------- */
 function TradeModal({initial,onClose,onSave,onDelete,accType,symbols,strategies}){
   const i=initial||{}; const [symbol,setSymbol]=useState(i.symbol||symbols[0]); const [side,setSide]=useState(i.side||"BUY");
   const [date,setDate]=useState(i.date||todayISO()); const [lotSize,setLotSize]=useState(i.lotSize??0.01);
@@ -354,12 +454,14 @@ function GeneralStats({trades,accType,capital,depositDate}){
     <Stat label="Open" value={open}/>
   </div>)
 }
+
+/* Best Strategy (with fallback when no closed trades) */
 function BestStrategy({trades,accType,strategies}){
-  const data = useMemo(()=>{
+  const closed = useMemo(()=>{
     const map = new Map();
     for(const t of trades){
       const v = computeDollarPnL(t,accType);
-      if(v===null || !isFinite(v)) continue;
+      if(v===null || !Number.isFinite(v)) continue;
       const key = t.strategy || "N/A";
       const rec = map.get(key) || {count:0,wins:0,pnl:0};
       rec.count += 1; rec.pnl += v; if(v>0) rec.wins += 1;
@@ -369,11 +471,30 @@ function BestStrategy({trades,accType,strategies}){
       name, ...rec, winRate: rec.count? Math.round((rec.wins/rec.count)*100):0,
       color: (strategies.find(s=>s.name===name)?.color)||"default"
     }));
-    rows.sort((a,b)=> b.wins - a.wins || b.winRate - a.winRate);
+    rows.sort((a,b)=> b.wins - a.wins || b.winRate - a.winRate || b.pnl - a.pnl);
     return rows[0] || null;
   },[trades,accType,strategies]);
+
+  const fallback = useMemo(()=>{
+    if (closed) return null;
+    const freq = new Map();
+    for (const t of trades){
+      const key = t.strategy || "N/A";
+      freq.set(key, (freq.get(key)||0) + 1);
+    }
+    if (!freq.size) return null;
+    let best = null;
+    for (const [name,count] of freq){
+      const color = (strategies.find(s=>s.name===name)?.color) || "default";
+      if (!best || count > best.count) best = {name,count,winRate:0,pnl:0,color};
+    }
+    return best;
+  },[trades,strategies,closed]);
+
+  const data = closed || fallback;
   if(!data) return null;
-  const pct = Math.max(0, Math.min(100, data.winRate));
+
+  const pct = Math.max(0, Math.min(100, data.winRate||0));
   const R=60, C=2*Math.PI*R, val = (pct/100)*C;
   return(
     <div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4">
@@ -389,12 +510,13 @@ function BestStrategy({trades,accType,strategies}){
         <div>
           <div className={`text-lg font-semibold ${STRAT_COLORS[data.color]||""}`}>{data.name}</div>
           <div className="text-slate-300 text-sm">Win rate: {pct}% · Trades: {data.count}</div>
-          <div className={`text-sm ${data.pnl>0?'text-green-400':data.pnl<0?'text-red-400':'text-amber-400'}`}>P&L: {formatPnlDisplay(accType,data.pnl)}</div>
+          <div className={`text-sm ${data.pnl>0?'text-green-400':data.pnl<0?'text-red-400':'text-amber-400'}`}>P&L: {closed ? formatPnlDisplay(accType,data.pnl) : '—'}</div>
         </div>
       </div>
     </div>
   )
 }
+
 function DetailedStats({trades,accType}){
   const rows=useMemo(()=>{const m={};for(const t of trades){const k=t.symbol||"N/A";const v=computeDollarPnL(t,accType);const s=m[k]||{count:0,pnl:0};s.count+=1;s.pnl+=(v&&isFinite(v))?v:0;m[k]=s}return Object.entries(m).map(([sym,v])=>({sym,count:v.count,pnl:v.pnl}))},[trades,accType]);
   return(<div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4">
@@ -472,9 +594,7 @@ function NotesPanel({trades}){
           <div key={n.id} className="bg-slate-900/50 border border-slate-700 rounded-xl p-3 flex flex-col">
             <div className="font-semibold mb-1 truncate">{n.title}</div>
             <div className="text-slate-400 text-xs mb-2">{n.date}</div>
-            <div className="text-sm whitespace-pre-wrap flex-1">
-              <div dangerouslySetInnerHTML={{__html:n.content}}/>
-            </div>
+            <div className="text-sm whitespace-pre-wrap flex-1"><div dangerouslySetInnerHTML={{__html:n.content}}/></div>
             <div className="mt-3 flex gap-2">
               <button onClick={()=>{setDraft(n);setShow(true)}} className="px-2 py-1 rounded-lg border border-slate-700">✎</button>
               <button onClick={()=>del(n.id)} className="px-2 py-1 rounded-lg border border-red-700 text-red-300">✕</button>
@@ -498,7 +618,7 @@ function NoteModal({onClose,onSave,initial,trades}){
     const sel=window.getSelection?.(); if(!sel||sel.rangeCount===0) return;
     const range=sel.getRangeAt(0);
     if(!editorRef.current || !editorRef.current.contains(range.commonAncestorContainer)) return;
-    document.execCommand("fontSize",false,7); // temp tag on selection
+    document.execCommand("fontSize",false,7);
     const fontNodes=editorRef.current.querySelectorAll('font[size="7"]');
     fontNodes.forEach(n=>{n.removeAttribute("size"); n.style.fontSize=px;});
   };
@@ -588,7 +708,7 @@ function AppShell({children,capitalPanel,nav,logoSrc,onToggleSidebar,onExport,on
   </div>)
 }
 
-/* ---------- Login & Forgot Password (unchanged) ---------- */
+/* ---------- Login & Forgot Password ---------- */
 function parseJwt(token){try{return JSON.parse(atob(token.split('.')[1]))}catch{return null}}
 function ResetModal({email,onClose}){
   const [e,setE]=useState(email||""); const [link,setLink]=useState(""); const [msg,setMsg]=useState("");
@@ -598,7 +718,7 @@ function ResetModal({email,onClose}){
     const first_name = (u.name||e).split(' ')[0];
     const reset_link = url; const expiry_time = "15 minutes";
     try {
-      await emailjs.send('service_66nh71a', 'template_067iydk', { to_email: e, first_name, reset_link, expiry_time });
+      await emailjs.send('service_9e6t2it', 'template_067iydk', { to_email: e, first_name, reset_link, expiry_time });
       setMsg('Reset email sent successfully. Check your inbox (or spam).');
     } catch (error) {
       setMsg('Failed to send email: ' + (error?.text || 'Unknown error.'));
@@ -702,70 +822,18 @@ function App(){
 
   const onExport=()=>{const csv=toCSV(state.trades,state.accType);const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="Nitty_Gritty_Template_Export.csv";a.click();URL.revokeObjectURL(url)};
 
-  /* ---- Import: single global file input, supports .csv/.xls/.xlsx ---- */
-  const __importEl = (window.__ngImportEl ||= (() => {
+  /* Programmatic hidden input for Import (no stray handleFile) */
+  const __importEl = React.useMemo(()=> {
     const el = document.createElement('input');
     el.type = 'file';
     el.accept = '.csv,.xls,.xlsx';
     el.style.display = 'none';
     document.body.appendChild(el);
     return el;
-  })());
-  function openImportDialog(){ __importEl.value = ''; __importEl.click(); }
-
-  function splitCSVLine(line){
-    const out=[], n=line.length; let i=0, q=false, cur='';
-    while(i<n){
-      const c=line[i];
-      if(q){
-        if(c === '"' && line[i+1] === '"'){ cur+='"'; i+=2; continue; }
-        if(c === '"'){ q=false; i++; continue; }
-        cur += c; i++; continue;
-      }else{
-        if(c === '"'){ q=true; i++; continue; }
-        if(c === ','){ out.push(cur); cur=''; i++; continue; }
-        cur += c; i++; continue;
-      }
-    }
-    out.push(cur); return out;
-  }
-  function csvToRows(text){
-    const t=text.replace(/^\uFEFF/,'');
-    const lines=t.split(/\r?\n/).filter(l=>l.trim().length);
-    if(!lines.length) return [];
-    const headers=splitCSVLine(lines[0]);
-    return lines.slice(1).map(line=>{
-      const cells=splitCSVLine(line), o={};
-      headers.forEach((h,i)=>o[h.trim()]=(cells[i]??'').trim());
-      return o;
-    });
-  }
-  const HEADER_MAP = {
-    "Date":"date","Symbol":"symbol","Side":"side","Lot Size":"lotSize",
-    "Entry":"entry","Exit":"exit","TP1":"tp1","TP2":"tp2","SL":"sl",
-    "Strategy":"strategy","Exit Type":"exitType"
-  };
-  function rowsToTrades(rows){
-    return rows.map(r=>{
-      const t={};
-      for(const [H,K] of Object.entries(HEADER_MAP)){
-        t[K] = r[H] ?? r[H.toLowerCase()] ?? r[H.replace(/\s/g,'')] ?? '';
-      }
-      const num=v=>(v===''||v==null)?undefined:parseFloat(v);
-      t.id = Math.random().toString(36).slice(2);
-      t.date = t.date || todayISO();
-      t.symbol = String(t.symbol||'').toUpperCase();
-      t.side = (String(t.side||'BUY').toUpperCase()==='SELL')?'SELL':'BUY';
-      t.lotSize = num(t.lotSize)||0.01;
-      t.entry=num(t.entry); t.exit=num(t.exit);
-      t.tp1=num(t.tp1); t.tp2=num(t.tp2); t.sl=num(t.sl);
-      t.strategy = t.strategy || DEFAULT_STRATEGIES[0].name;
-      t.exitType = t.exitType || "Trade In Progress";
-      return t;
-    });
-  }
-  if (!__importEl.__ngBound){
-    __importEl.addEventListener('change', async (e)=>{
+  },[]);
+  function openImportDialog(){ __importEl.value=''; __importEl.click(); }
+  React.useEffect(()=> {
+    const handler = async (e)=>{
       const f = e.target.files?.[0]; if(!f) return;
       const ext = (f.name.split('.').pop()||'').toLowerCase();
       let rows;
@@ -779,9 +847,10 @@ function App(){
       }
       const trades = rowsToTrades(rows);
       setState(s => ({ ...s, trades: [...trades.reverse(), ...s.trades] }));
-    });
-    __importEl.__ngBound = true;
-  }
+    };
+    __importEl.addEventListener('change', handler);
+    return ()=>__importEl.removeEventListener('change', handler);
+  },[__importEl]);
 
   const onLogout=()=>{saveCurrent("");setCurrentEmail("")};
   const initGoogle=(container,onEmail)=>{
@@ -804,6 +873,7 @@ function App(){
   const resetStart=()=>{setShowReset(true)};
   const addOrUpdate=(draft)=>{const id=draft.id||Math.random().toString(36).slice(2); const arr=state.trades.slice(); const idx=arr.findIndex(t=>t.id===id); const rec={...draft,id}; if(idx>=0)arr[idx]=rec; else arr.unshift(rec); setState({...state,trades:arr}); setShowTrade(false); setEditItem(null)};
   const delTrade=(id)=>setState({...state,trades:state.trades.filter(t=>t.id!==id)});
+
   const openTrades=state.trades.filter(t=> !t.exitType || t.exitType === "Trade In Progress").length;
   const realized=state.trades.filter(t=>new Date(t.date)>=new Date(state.depositDate)&&t.exitType && t.exitType !== "Trade In Progress").map(t=>computeDollarPnL(t,state.accType)).filter(v=>v!==null&&isFinite(v)).reduce((a,b)=>a+b,0);
   const effectiveCapital=state.capital+realized;
@@ -828,6 +898,7 @@ function App(){
   </>);
 
   const logoSrc=LOGO_PUBLIC;
+
   return(
     <AppShell capitalPanel={capitalPanel} nav={nav} logoSrc={logoSrc}
       onToggleSidebar={()=>setCollapsed(v=>!v)} onExport={onExport} onImport={openImportDialog} onLogout={onLogout} sidebarCollapsed={collapsed}>
