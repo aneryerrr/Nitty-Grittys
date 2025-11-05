@@ -13,5 +13,8 @@ html,body,#root{height:100%}
 /* Gauge text anti-aliasing for Best Strategy */
 .svg-text { paint-order: stroke; stroke: rgba(2,6,23,.3); stroke-width: .6px }
 
-/* Subtle row lines in histories */
+/* Subtle row separators in histories */
 .tr-row{border-top:1px solid rgba(51,65,85,.6)}
+
+/* Inputs look consistent across browsers */
+input,select,textarea{outline:none}
