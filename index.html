@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nitty Gritty</title>
 
-  <!-- prevent stale caches while you iterate -->
+  <!-- keep caching conservative while iterating -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
@@ -39,6 +39,14 @@
 
   <!-- EmailJS -->
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+  <!-- ✅ EmailJS CONFIG (fill these with your real IDs) -->
+  <script>
+    // Put your real values here (they’re read by script.js)
+    window.EMAILJS_PUBLIC_KEY  = "qQucnU6BE7h1zb5Ex";
+    window.EMAILJS_SERVICE_ID  = "service_9e6t2it";   // e.g. "service_nittygritty"
+    window.EMAILJS_TEMPLATE_ID = "template_067iydk";  // e.g. "template_reset"
+  </script>
 
   <!-- Babel (in-browser JSX transform) -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
