@@ -1,4 +1,5 @@
 /* Nitty Gritty – tiny patch build
+   - Fix: page not loading due to missing handleFile + duplicate import inputs/listeners
    - Notes: glyph Save icon + font-size tool only affects selection
    - Import restored (CSV/XLS/XLSX) in user menu
    - Remove "Account Setup" from left panel (still in Settings)
@@ -15,7 +16,7 @@ const IconUpload=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor
 const IconCalendar=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M8 3v4M16 3v4"/><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/></svg>);
 const IconPlus=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M12 5v14M5 12h14"/></svg>);
 const IconHistory=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M12 8v5l3 3"/><path d="M12 3a9 9 0 1 0 9 9"/><path d="M21 3v6h-6"/></svg>);
-const IconSettings=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.4 1V22a2 2 0 1 1-4 0v-.1a1.65 1.65 0 0 0-.4-1 1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1-.4H2a2 2 0 1 1 0-4h.1a1.65 1.65 0 0 0 1-.4 1.65 1.65 0 0 0 .6-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 1 1 6.24 2.9l.06.06A1.65 1.65 0 0 0 8 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .4-1V2a2 2 0 1 1 4 0v.1c0 .38.14.74.4 1 .26.26.62.4 1 .4.62 0 1.22-.25 1.64-.68l.06-.06A2 2 0 1 1 21.1 6.24l-.06.06c-.26.26-.4.62-.4 1s.14.74.4 1c.26.26.62.4 1 .4H22a2 2 0 1 1 0 4h-.1a1.65 1.65 0 0 0-1 .4 1.65 1.65 0 0 0-.6 1Z"/></svg>);
+const IconSettings=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.4 1V22a2 2 0 1 1-4 0v-.1a1.65 1.65 0 0 0-.4-1 1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1 6.24-3.1l.06.06A1.65 1.65 0 0 0 8 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .4-1V2a2 2 0 1 1 4 0v.1c0 .38.14.74.4 1 .26.26.62.4 1 .4.62 0 1.22-.25 1.64-.68l.06-.06A2 2 0 1 1 21.1 6.24l-.06.06c-.26.26-.4.62-.4 1s.14.74.4 1c.26.26.62.4 1 .4H22a2 2 0 1 1 0 4h-.1a1.65 1.65 0 0 0-1 .4 1.65 1.65 0 0 0-.6 1Z"/></svg>);
 const IconHome=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9v12h14V9"/></svg>);
 const IconNote=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M3 7a2 2 0 0 1 2-2h8l4 4v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M13 3v4h4"/></svg>);
 const IconSave=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l3 3v13a2 2 0 0 1-2 2Z"/><path d="M7 3v5h8"/><path d="M7 13h10"/><path d="M7 17h6"/></svg>);
@@ -156,7 +157,7 @@ function AccountSetupModal({name,setName,accType,setAccType,capital,setCapital,d
     </Modal>
   )
 }
-/* ---------- Settings Panel (already perfect) ---------- */
+/* ---------- Settings Panel (Customize Journal inside) ---------- */
 function SettingsPanel({name,setName,accType,setAccType,capital,setCapital,depositDate,setDepositDate,email,cfg,setCfg}){
   const [tab,setTab]=useState("personal");
   const [pw1,setPw1]=useState(""); const [pw2,setPw2]=useState(""); const [msg,setMsg]=useState("");
@@ -331,7 +332,7 @@ function CalendarModal({onClose,trades,view,setView,month,setMonth,year,setYear,
     </Modal>
   )
 }
-/* ---------- Dashboard blocks (unchanged look) ---------- */
+/* ---------- Dashboard blocks ---------- */
 function GeneralStats({trades,accType,capital,depositDate}){
   const realized=trades.filter(t=>new Date(t.date)>=new Date(depositDate)&&t.exitType && t.exitType !== "Trade In Progress");
   const pnl=realized.map(t=>computeDollarPnL(t,accType)).filter(v=>v!==null&&isFinite(v));
@@ -398,7 +399,7 @@ function DetailedStats({trades,accType}){
         </tr>))}</tbody></table></div>
   </div>)
 }
-/* ---------- Histories (unchanged) ---------- */
+/* ---------- Histories ---------- */
 function Histories({trades,accType,onEdit,onDelete,strategies}){
   return(
     <div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4">
@@ -443,7 +444,7 @@ function Histories({trades,accType,onEdit,onDelete,strategies}){
     </div>
   )
 }
-/* ---------- Notes (glyph icon + selection-only sizing) ---------- */
+/* ---------- Notes ---------- */
 function NotesPanel({trades}){
   const [items,setItems]=useState(()=>{try{return JSON.parse(localStorage.getItem("ng_notes")||"[]")}catch{return[]}});
   const [show,setShow]=useState(false);
@@ -460,7 +461,7 @@ function NotesPanel({trades}){
           <div key={n.id} className="bg-slate-900/50 border border-slate-700 rounded-xl p-3 flex flex-col">
             <div className="font-semibold mb-1 truncate">{n.title}</div>
             <div className="text-slate-400 text-xs mb-2">{n.date}</div>
-            <div className="text-sm whitespace-pre-wrap flex-1">{/* preview without referenced trade */}<div dangerouslySetInnerHTML={{__html:n.content}}/></div>
+            <div className="text-sm whitespace-pre-wrap flex-1"><div dangerouslySetInnerHTML={{__html:n.content}}/></div>
             <div className="mt-3 flex gap-2">
               <button onClick={()=>{setDraft(n);setShow(true)}} className="px-2 py-1 rounded-lg border border-slate-700">✎</button>
               <button onClick={()=>del(n.id)} className="px-2 py-1 rounded-lg border border-red-700 text-red-300">✕</button>
@@ -507,7 +508,10 @@ function NoteModal({onClose,onSave,initial,trades}){
                 <option value="13px">Body</option>
               </select>
             </div>
-            <div ref={el=>{editorRef.current=el}} contentEditable className="mt-2 min-h-[200px] h-[260px] bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 overflow-auto"></div>
+            <div
+              ref={el=>{editorRef.current=el}}
+              contentEditable
+              className="mt-2 min-h-[200px] h-[260px] bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 overflow-auto"></div>
           </div>
         </div>
         <div className="space-y-3">
@@ -678,18 +682,25 @@ function App(){
   const [showCal,setShowCal]=useState(false); const now=new Date(); const [calView,setCalView]=useState("month"); const [calMonth,setCalMonth]=useState(now.getMonth()); const [calYear,setCalYear]=useState(now.getFullYear()); const [calSel,setCalSel]=useState(todayISO());
   const [collapsed,setCollapsed]=useState(false);
   const [showReset,setShowReset]=useState(false); const [resetToken,setResetToken]=useState("");
-  const fileRef=useRef(null); // hidden file input for import
+  const fileRef=useRef(null); // hidden file input (kept)
   useEffect(()=>{const hash=new URLSearchParams(location.hash.slice(1));const tok=hash.get("reset"); if(tok){setResetToken(tok)}},[]);
   useEffect(()=>{if(state&&(!state.name||!state.depositDate)) setShowAcct(true)},[state?.email]);
   useEffect(()=>{if(typeof emailjs !== 'undefined'){emailjs.init({publicKey: "qQucnU6BE7h1zb5Ex"});}},[]);
   const onExport=()=>{const csv=toCSV(state.trades,state.accType);const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="Nitty_Gritty_Template_Export.csv";a.click();URL.revokeObjectURL(url)};
-  // ---- Import: hidden input + launcher ----
-  const __importEl = document.createElement('input');
-  __importEl.type = 'file';
-  __importEl.accept = '.csv,.xls,.xlsx';
-  __importEl.style.display = 'none';
-  document.body.appendChild(__importEl);
-  function openImportDialog() { __importEl.value = ''; __importEl.click(); } // <— call this from your Import button
+
+  // ---------- Import: use ONE hidden input (singleton) and a safe handler ----------
+  const __importEl = (window.__ngImportEl ||= (() => {
+    const el = document.createElement('input');
+    el.type = 'file';
+    el.accept = '.csv,.xls,.xlsx';
+    el.style.display = 'none';
+    document.body.appendChild(el);
+    return el;
+  })());
+
+  function openImportDialog() { __importEl.value = ''; __importEl.click(); }
+
+  // shared CSV parsing helpers
   function splitCSVLine(line){
     const out=[], n=line.length; let i=0, q=false, cur='';
     while(i<n){
@@ -741,22 +752,35 @@ function App(){
       return t;
     });
   }
-  __importEl.addEventListener('change', async (e)=>{
-    const f = e.target.files?.[0]; if(!f) return;
-    const ext = (f.name.split('.').pop()||'').toLowerCase();
-    let rows;
-    if(ext === 'csv'){
-      rows = csvToRows(await f.text());
-    }else{
-      if(typeof XLSX === 'undefined'){ alert('XLS/XLSX import requires SheetJS.'); return; }
-      const wb = XLSX.read(await f.arrayBuffer(), { type:'array' });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      rows = XLSX.utils.sheet_to_json(ws, { defval:'' });
-    }
-    const trades = rowsToTrades(rows);
-    // Prepend new imports (oldest first so final order is preserved at the top)
-    setState(s => ({ ...s, trades: [...trades.reverse(), ...s.trades] }));
-  });
+
+  // unified handler (used by both the JSX input and the singleton)
+  function handleFile(ev){
+    const f = ev.target.files?.[0];
+    if(!f) return;
+    (async () => {
+      const ext = (f.name.split('.').pop()||'').toLowerCase();
+      let rows;
+      if (ext === 'csv') {
+        rows = csvToRows(await f.text());
+      } else {
+        if (typeof XLSX === 'undefined') { alert('XLS/XLSX import requires SheetJS.'); return; }
+        const wb = XLSX.read(await f.arrayBuffer(), { type:'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        rows = XLSX.utils.sheet_to_json(ws, { defval:'' });
+      }
+      const trades = rowsToTrades(rows);
+      setState(s => ({ ...s, trades: [...trades.reverse(), ...s.trades] }));
+      ev.target.value = ''; // allow re-importing same file
+    })();
+  }
+
+  // attach once to the singleton input
+  if (!__importEl.__ngBound) {
+    __importEl.addEventListener('change', handleFile);
+    __importEl.__ngBound = true;
+  }
+
+  // (keep the extra hidden input from JSX; it won’t be used, but no harm)
   const onLogout=()=>{saveCurrent("");setCurrentEmail("")};
   const initGoogle=(container,onEmail)=>{
     const clientId=window.GOOGLE_CLIENT_ID;
@@ -781,15 +805,16 @@ function App(){
   const openTrades=state.trades.filter(t=> !t.exitType || t.exitType === "Trade In Progress").length;
   const realized=state.trades.filter(t=>new Date(t.date)>=new Date(state.depositDate)&&t.exitType && t.exitType !== "Trade In Progress").map(t=>computeDollarPnL(t,state.accType)).filter(v=>v!==null&&isFinite(v)).reduce((a,b)=>a+b,0);
   const effectiveCapital=state.capital+realized;
+
   if(resetToken){return <NewPasswordModal token={resetToken} onClose={()=>{setResetToken(""); location.hash=""}}/>}
   if(!currentEmail){return <><LoginView onLogin={login} onSignup={signup} initGoogle={initGoogle} resetStart={resetStart}/>{showReset&&<ResetModal email="" onClose={()=>setShowReset(false)}/>}</>}
+
   const navBtn=(label,pageKey,Icon)=>(<button onClick={()=>setPage(pageKey)} className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border ${page===pageKey?'bg-slate-700 border-slate-600':'border-slate-700 hover:bg-slate-800'}`}>{Icon?<Icon/>:null}<span>{label}</span></button>);
   const capitalPanel=(<div>
     <div className="text-sm text-slate-300">Account Type</div><div className="font-semibold mb-3">{state.accType}</div>
     <div className="text-sm text-slate-300">Capital</div><div className="text-2xl font-bold mb-1">{state.accType==='Cent Account'?`${r2(effectiveCapital*100).toFixed(2)} ¢`:fmt$(effectiveCapital)}</div>
     <div className="text-xs text-slate-400">Deposit: {state.depositDate}</div>
     <div className="mt-3 text-sm text-slate-300">Open trades</div><div className="text-lg font-semibold">{openTrades}</div>
-    {/* Account Setup button removed per request */}
     <div className="pt-2"><button onClick={()=>{setEditItem(null);setShowTrade(true)}} className="w-full px-3 py-2 rounded-lg border border-slate-700 flex items-center justify-center gap-2"><IconPlus/>Add trade</button></div>
   </div>);
   const nav=(<>
@@ -800,8 +825,10 @@ function App(){
     {navBtn("Settings","settings",IconSettings)}
   </>);
   const logoSrc=LOGO_PUBLIC;
+
   return(
     <>
+      {/* Kept (not used for menu import, but harmless). Now wired with a real handler to avoid ReferenceError */}
       <input ref={fileRef} type="file" accept=".csv,.xls,.xlsx" className="hidden" onChange={handleFile}/>
       <AppShell capitalPanel={capitalPanel} nav={nav} logoSrc={logoSrc}
         onToggleSidebar={()=>setCollapsed(v=>!v)} onExport={onExport} onImport={openImportDialog} onLogout={onLogout} sidebarCollapsed={collapsed}>
