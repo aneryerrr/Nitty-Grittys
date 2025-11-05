@@ -683,8 +683,80 @@ function App(){
   useEffect(()=>{if(state&&(!state.name||!state.depositDate)) setShowAcct(true)},[state?.email]);
   useEffect(()=>{if(typeof emailjs !== 'undefined'){emailjs.init({publicKey: "qQucnU6BE7h1zb5Ex"});}},[]);
   const onExport=()=>{const csv=toCSV(state.trades,state.accType);const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="Nitty_Gritty_Template_Export.csv";a.click();URL.revokeObjectURL(url)};
-  // -------- Import restored (CSV / XLS / XLSX) --------
-  const onImport=()=>{openImportDialog()};
+  // ---- Import: hidden input + launcher ----
+  const __importEl = document.createElement('input');
+  __importEl.type = 'file';
+  __importEl.accept = '.csv,.xls,.xlsx';
+  __importEl.style.display = 'none';
+  document.body.appendChild(__importEl);
+  function openImportDialog() { __importEl.value = ''; __importEl.click(); } // <— call this from your Import button
+  function splitCSVLine(line){
+    const out=[], n=line.length; let i=0, q=false, cur='';
+    while(i<n){
+      const c=line[i];
+      if(q){
+        if(c === '"' && line[i+1] === '"'){ cur+='"'; i+=2; continue; }
+        if(c === '"'){ q=false; i++; continue; }
+        cur += c; i++; continue;
+      }else{
+        if(c === '"'){ q=true; i++; continue; }
+        if(c === ','){ out.push(cur); cur=''; i++; continue; }
+        cur += c; i++; continue;
+      }
+    }
+    out.push(cur); return out;
+  }
+  function csvToRows(text){
+    const t=text.replace(/^\uFEFF/,'');
+    const lines=t.split(/\r?\n/).filter(l=>l.trim().length);
+    if(!lines.length) return [];
+    const headers=splitCSVLine(lines[0]);
+    return lines.slice(1).map(line=>{
+      const cells=splitCSVLine(line), o={};
+      headers.forEach((h,i)=>o[h.trim()]=(cells[i]??'').trim());
+      return o;
+    });
+  }
+  const HEADER_MAP = {
+    "Date":"date","Symbol":"symbol","Side":"side","Lot Size":"lotSize",
+    "Entry":"entry","Exit":"exit","TP1":"tp1","TP2":"tp2","SL":"sl",
+    "Strategy":"strategy","Exit Type":"exitType"
+  };
+  function rowsToTrades(rows){
+    return rows.map(r=>{
+      const t={};
+      for(const [H,K] of Object.entries(HEADER_MAP)){
+        t[K] = r[H] ?? r[H.toLowerCase()] ?? r[H.replace(/\s/g,'')] ?? '';
+      }
+      const num=v=>(v===''||v==null)?undefined:parseFloat(v);
+      t.id = Math.random().toString(36).slice(2);
+      t.date = t.date || todayISO();
+      t.symbol = String(t.symbol||'').toUpperCase();
+      t.side = (String(t.side||'BUY').toUpperCase()==='SELL')?'SELL':'BUY';
+      t.lotSize = num(t.lotSize)||0.01;
+      t.entry=num(t.entry); t.exit=num(t.exit);
+      t.tp1=num(t.tp1); t.tp2=num(t.tp2); t.sl=num(t.sl);
+      t.strategy = t.strategy || DEFAULT_STRATEGIES[0].name;
+      t.exitType = t.exitType || "Trade In Progress";
+      return t;
+    });
+  }
+  __importEl.addEventListener('change', async (e)=>{
+    const f = e.target.files?.[0]; if(!f) return;
+    const ext = (f.name.split('.').pop()||'').toLowerCase();
+    let rows;
+    if(ext === 'csv'){
+      rows = csvToRows(await f.text());
+    }else{
+      if(typeof XLSX === 'undefined'){ alert('XLS/XLSX import requires SheetJS.'); return; }
+      const wb = XLSX.read(await f.arrayBuffer(), { type:'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      rows = XLSX.utils.sheet_to_json(ws, { defval:'' });
+    }
+    const trades = rowsToTrades(rows);
+    // Prepend new imports (oldest first so final order is preserved at the top)
+    setState(s => ({ ...s, trades: [...trades.reverse(), ...s.trades] }));
+  });
   const onLogout=()=>{saveCurrent("");setCurrentEmail("")};
   const initGoogle=(container,onEmail)=>{
     const clientId=window.GOOGLE_CLIENT_ID;
