@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 
-  <link rel="stylesheet" href="./styles.css?v=2025-11-05" />
+  <link rel="stylesheet" href="./styles.css" />
 </head>
 <body class="bg-slate-950 text-slate-100">
   <div id="root"></div>
@@ -26,23 +26,23 @@
   </script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
-  <!-- React + ReactDOM -->
+  <!-- React + ReactDOM (UMD) -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
-  <!-- Tailwind (CDN) -->
+  <!-- Tailwind CDN (ok for GitHub Pages prototype) -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- XLS/CSV import -->
+  <!-- SheetJS for XLS/XLSX support -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <!-- EmailJS (Forgot Password) -->
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 
-  <!-- Babel -->
+  <!-- Babel (in-browser) -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <!-- App -->
-  <script type="text/babel" src="./script.js?v=2025-11-05"></script>
+  <script type="text/babel" src="./script.js"></script>
 </body>
 </html>
