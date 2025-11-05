@@ -5,13 +5,17 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nitty Gritty</title>
 
-  <!-- Cache-busting to avoid stale JS/CSS on GH Pages -->
+  <!-- Keep the same cache rules -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
 
   <link rel="icon" href="./logo-ng.png" type="image/png" />
-  <link rel="stylesheet" href="./styles.css?v=2025-11-05-classic" />
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+
+  <!-- Styles (unchanged, cache-busted) -->
+  <link rel="stylesheet" href="./styles.css?v=4" />
 </head>
 <body class="bg-slate-950 text-slate-100">
   <div id="root"></div>
@@ -30,16 +34,16 @@
   <!-- Tailwind (CDN) -->
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- SheetJS for .xls/.xlsx import -->
+  <!-- SheetJS for CSV/XLS/XLSX -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-  <!-- EmailJS (Forgot Password) -->
+  <!-- EmailJS -->
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 
-  <!-- Babel so we can keep a single JSX file -->
+  <!-- Babel (in-browser) -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <!-- App -->
-  <script type="text/babel" src="./script.js?v=2025-11-05-classic"></script>
+  <!-- App (cache-busted) -->
+  <script type="text/babel" data-presets="react,env" src="./script.js?v=4"></script>
 </body>
 </html>
