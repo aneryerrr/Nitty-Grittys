@@ -11,6 +11,7 @@
   <link rel="icon" href="./logo-ng.png" type="image/png" />
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="./styles.css" />
 </head>
 <body class="bg-slate-950 text-slate-100">
   <div id="root"></div>
@@ -29,39 +30,8 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <!-- EmailJS (Forgot Password) -->
   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-  <!-- Bump this version each push to defeat caches -->
-  <script>window.__NG_BUILD = "2025-11-06.02";</script>
   <!-- Babel -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <!-- Bootstrap loader -->
-  <script>
-    (async function boot() {
-      const v = "?v=" + (window.__NG_BUILD || ("dev-" + Date.now()));
-      // CSS with version param
-      const css = document.createElement("link");
-      css.rel = "stylesheet"; css.href = "./styles.css" + v;
-      document.head.appendChild(css);
-      // Safety shim during propagation
-      if (typeof window.DetailedStats === "undefined") {
-        window.DetailedStats = function () { return React.createElement("div"); };
-      }
-      try {
-        const res = await fetch("./script.js" + v, { cache: "no-store" });
-        if (!res.ok) throw new Error("HTTP " + res.status);
-        const src = await res.text();
-        const out = Babel.transform(src, { presets: ["env", "react"] }).code;
-        const s = document.createElement("script");
-        s.type = "text/javascript";
-        s.text = out;
-        document.body.appendChild(s);
-        try { localStorage.setItem("__NG_BUILD_LAST", String(window.__NG_BUILD||"dev")); } catch {}
-      } catch (e) {
-        const box = document.createElement("pre");
-        box.style.cssText = "white-space:pre-wrap;color:#fecaca;background:#450a0a;padding:12px;border-radius:8px;margin:12px";
-        box.textContent = "Failed to bootstrap app: " + (e && (e.stack || e.message || e));
-        document.body.appendChild(box);
-      }
-    })();
-  </script>
+  <script type="text/babel" src="./script.js"></script>
 </body>
 </html>
