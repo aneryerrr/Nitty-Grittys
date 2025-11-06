@@ -13,36 +13,18 @@
   <link rel="icon" href="./logo-ng.png" type="image/png" />
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-
-  <!-- Your styles (cache-busted) -->
-  <link rel="stylesheet" href="./styles.css?v=5" />
+  <link rel="stylesheet" href="./styles.css?v=6" />
 </head>
 <body class="bg-slate-950 text-slate-100">
   <div id="root"></div>
 
-  <!-- Google Identity Services -->
+  <!-- Google Identity Services (Keep your existing client id) -->
   <script>
     window.GOOGLE_CLIENT_ID = "579461879935-qaj9nta2pfbrn17ss5idu2k39p4joir4.apps.googleusercontent.com";
   </script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
-  <!-- Firebase (compat SDK for minimal code changes) -->
-  <script>
-    // >>> Fill these with your Firebase project values (Firebase console → Project settings → General → Your apps)
-    window.NG_FIREBASE_CONFIG = {
-      apiKey: "AIzaSyAS9y-WNQVW3sZfYKGDF_Ehm6NtIP2tv8o",
-      authDomain: "nitty-gritty-3b1da.firebaseapp.com",
-      projectId: "nitty-gritty-3b1da",
-      storageBucket: "nitty-gritty-3b1da.firebasestorage.app",
-      messagingSenderId: "425428858993",
-      appId: "1:425428858993:web:f22633e6e6e96caa0a03d0"
-    };
-  </script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
-
-  <!-- React + ReactDOM -->
+  <!-- React + ReactDOM (UMD) -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
@@ -55,10 +37,16 @@
   <!-- EmailJS (Forgot Password) -->
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 
-  <!-- Babel (in-browser) -->
+  <!-- Firebase (Compat CDN: app, analytics, auth, firestore) -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-analytics-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
+
+  <!-- Babel (in-browser, transforms type="text/babel") -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <!-- App (cache-busted) -->
-  <script type="text/babel" data-presets="react,env" src="./script.js?v=5"></script>
+  <script type="text/babel" data-presets="react,env" src="./script.js?v=6"></script>
 </body>
 </html>
