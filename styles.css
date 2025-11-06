@@ -1,9 +1,7 @@
 html,body,#root{height:100%}
 
-/* Login left panel: deep blue, no image */
-.hero{
-  background:#0a1d4d; /* deep blue */
-}
+/* Login left panel: deep blue, no image (as requested) */
+.hero{ background:#0a1d4d; }
 
 /* scrollers */
 .scroll-smooth::-webkit-scrollbar{height:8px;width:8px}
