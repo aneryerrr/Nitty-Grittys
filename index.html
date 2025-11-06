@@ -5,41 +5,45 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nitty Gritty</title>
 
+  <!-- Strong no-cache for the HTML itself -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+
   <link rel="icon" href="./logo-ng.png" type="image/png" />
-  <link rel="stylesheet" href="./styles.css" />
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 
-  <!-- Tailwind (CDN) -->
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- React + ReactDOM (UMD, production) -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-
-  <!-- Google Identity Services -->
-  <script>
-    window.GOOGLE_CLIENT_ID = "579461879935-qaj9nta2pfbrn17ss5idu2k39p4joir4.apps.googleusercontent.com";
-  </script>
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
-
-  <!-- SheetJS for CSV/XLS/XLSX -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-
-  <!-- EmailJS (kept; does not alter interface) -->
-  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-  <script>
-    /* If you use the reset flow, put your real keys here; otherwise leave as-is. */
-    window.EMAILJS_PUBLIC_KEY  = "qQucnU6BE7h1zb5Ex";
-    window.EMAILJS_SERVICE_ID  = "service_9e6t2it";
-    window.EMAILJS_TEMPLATE_ID = "template_067iydk";
-  </script>
-
-  <!-- Babel for in-browser JSX transform -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Your styles (cache-busted) -->
+  <link rel="stylesheet" href="./styles.css?v=3" />
 </head>
 <body class="bg-slate-950 text-slate-100">
   <div id="root"></div>
 
-  <!-- App -->
-  <script type="text/babel" data-presets="react,env" src="./script.js"></script>
+  <!-- Google Identity Services -->
+  <script>
+    window.GOOGLE_CLIENT_ID =
+      "579461879935-qaj9nta2pfbrn17ss5idu2k39p4joir4.apps.googleusercontent.com";
+  </script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <!-- React + ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+  <!-- Tailwind (CDN) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- XLS/CSV import (SheetJS) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- EmailJS (Forgot Password) -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+  <!-- Babel (in-browser) -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- App (cache-busted) -->
+  <script type="text/babel" data-presets="react,env" src="./script.js?v=3"></script>
 </body>
 </html>
