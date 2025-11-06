@@ -13,18 +13,21 @@
   <link rel="icon" href="./logo-ng.png" type="image/png" />
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-  <link rel="stylesheet" href="./styles.css?v=6" />
+
+  <!-- Your styles (cache-busted) -->
+  <link rel="stylesheet" href="./styles.css?v=4" />
 </head>
 <body class="bg-slate-950 text-slate-100">
   <div id="root"></div>
 
-  <!-- Google Identity Services (Keep your existing client id) -->
+  <!-- Google Identity Services -->
   <script>
-    window.GOOGLE_CLIENT_ID = "579461879935-qaj9nta2pfbrn17ss5idu2k39p4joir4.apps.googleusercontent.com";
+    window.GOOGLE_CLIENT_ID =
+      "579461879935-qaj9nta2pfbrn17ss5idu2k39p4joir4.apps.googleusercontent.com";
   </script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
-  <!-- React + ReactDOM (UMD) -->
+  <!-- React + ReactDOM -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
@@ -37,16 +40,10 @@
   <!-- EmailJS (Forgot Password) -->
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 
-  <!-- Firebase (Compat CDN: app, analytics, auth, firestore) -->
-  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-analytics-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore-compat.js"></script>
-
-  <!-- Babel (in-browser, transforms type="text/babel") -->
+  <!-- Babel (in-browser) -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <!-- App (cache-busted) -->
-  <script type="text/babel" data-presets="react,env" src="./script.js?v=6"></script>
+  <script type="text/babel" data-presets="react,env" src="./script.js?v=4"></script>
 </body>
 </html>
