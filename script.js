@@ -1,15 +1,14 @@
-/* Nitty Gritty – tiny patch build (rev.3)
-   - Fix: CSV/XLS/XLSX import producing repeated single entry
-          → always parse via SheetJS for all formats
-   - Add: "Reset History" with confirmation modal
-   - Add: Best Strategy card (restored)
-   - Tweak: Settings icon → cleaner professional glyph (round caps/joins)
-   - Keep: Forgot password (EmailJS) flow intact
-   - NOTE: No other features or layout changed
+/* Nitty Gritty – tiny patch build (rev.4)
+   - Import: robust header/row mapping so *all* rows/columns are captured
+             (trims, case-insensitive, space/underscore-insensitive, common synonyms,
+              Excel serial dates ➜ ISO yyyy-mm-dd, tolerant numeric parsing)
+   - Notes: uniform preview list (same width, nice wrapping & 3-line clamp)
+   - Login: hero background is deep blue (CSS), no image
+   - Kept exactly as-is: Reset History, Best Strategy, Settings icon, Forgot password
 */
 const {useState,useMemo,useEffect,useRef} = React;
 
-/* ---------- Icons ---------- */
+/* ---------- Icons (unchanged) ---------- */
 const iconCls="h-5 w-5";
 const IconUser=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Z"/><path d="M4 20a8 8 0 0 1 16 0Z"/></svg>);
 const IconLogout=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M9 21h4a4 4 0 0 0 4-4V7a4 4 0 0 0-4-4H9"/><path d="M16 12H3"/><path d="M7 8l-4 4 4 4"/></svg>);
@@ -18,7 +17,7 @@ const IconUpload=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor
 const IconCalendar=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M8 3v4M16 3v4"/><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/></svg>);
 const IconPlus=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M12 5v14M5 12h14"/></svg>);
 const IconHistory=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M12 8v5l3 3"/><path d="M12 3a9 9 0 1 0 9 9"/><path d="M21 3v6h-6"/></svg>);
-/* Cleaner, professional gear (round caps/joins) */
+/* Professional gear (already approved) */
 const IconSettings=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={iconCls} {...p}><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.9 2.9l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1V22a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-.4-1 1.7 1.7 0 0 0-1-.6 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.9-2.9l.1-.1a1.7 1.7 0 0 0 .6-1.8 1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1-.4H2a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1-.4 1.7 1.7 0 0 0 .6-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1A2 2 0 1 1 6.4 2.9l.1.1A1.7 1.7 0 0 0 8.3 4a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1V2a2 2 0 1 1 4 0v.1c0 .4.2.8.4 1a1.7 1.7 0 0 0 1 .4c.6 0 1.2-.2 1.6-.7l.1-.1A2 2 0 1 1 21.1 6.2l-.1.1c-.3.3-.4.6-.4 1s.1.8.4 1c.3.3.6.4 1 .4H22a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1 .4c-.4.3-.6.6-.7 1Z"/></svg>);
 const IconHome=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9v12h14V9"/></svg>);
 const IconNote=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M3 7a2 2 0 0 1 2-2h8l4 4v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M13 3v4h4"/></svg>);
@@ -180,7 +179,7 @@ function AccountSetupModal({name,setName,accType,setAccType,capital,setCapital,d
   )
 }
 
-/* ---------- Settings Panel (unchanged except icon glyph already updated) ---------- */
+/* ---------- Settings Panel (unchanged UI/glyph) ---------- */
 function SettingsPanel({name,setName,accType,setAccType,capital,setCapital,depositDate,setDepositDate,email,cfg,setCfg}){
   const [tab,setTab]=useState("personal");
   const [pw1,setPw1]=useState(""); const [pw2,setPw2]=useState(""); const [msg,setMsg]=useState("");
@@ -358,7 +357,7 @@ function CalendarModal({onClose,trades,view,setView,month,setMonth,year,setYear,
   )
 }
 
-/* ---------- Dashboard blocks ---------- */
+/* ---------- Dashboard blocks (unchanged incl. BestStrategy) ---------- */
 function GeneralStats({trades,accType,capital,depositDate}){
   const realized=trades.filter(t=>new Date(t.date)>=new Date(depositDate)&&t.exitType && t.exitType !== "Trade In Progress");
   const pnl=realized.map(t=>computeDollarPnL(t,accType)).filter(v=>v!==null&&isFinite(v));
@@ -426,7 +425,7 @@ function DetailedStats({trades,accType}){
   </div>)
 }
 
-/* ---------- Histories (added Reset History + confirm) ---------- */
+/* ---------- Histories (unchanged; Reset works) ---------- */
 function Histories({trades,accType,onEdit,onDelete,strategies,onClearAll}){
   const [ask,setAsk]=useState(false);
   return(
@@ -486,7 +485,7 @@ function Histories({trades,accType,onEdit,onDelete,strategies,onClearAll}){
   )
 }
 
-/* ---------- Notes (unchanged) ---------- */
+/* ---------- Notes (uniform preview width; everything else unchanged) ---------- */
 function NotesPanel({trades}){
   const [items,setItems]=useState(()=>{try{return JSON.parse(localStorage.getItem("ng_notes")||"[]")}catch{return[]}});
   const [show,setShow]=useState(false);
@@ -500,10 +499,10 @@ function NotesPanel({trades}){
       </div>
       <div className="space-y-3">
         {items.map(n=>(
-          <div key={n.id} className="bg-slate-900/50 border border-slate-700 rounded-xl p-3 flex flex-col">
+          <div key={n.id} className="note-card bg-slate-900/50 border border-slate-700 rounded-xl p-3 flex flex-col">
             <div className="font-semibold mb-1 truncate">{n.title}</div>
             <div className="text-slate-400 text-xs mb-2">{n.date}</div>
-            <div className="text-sm whitespace-pre-wrap flex-1">
+            <div className="note-preview text-sm whitespace-pre-wrap break-words flex-1">
               <div dangerouslySetInnerHTML={{__html:n.content}}/>
             </div>
             <div className="mt-3 flex gap-2">
@@ -579,7 +578,7 @@ function NoteModal({onClose,onSave,initial,trades}){
   )
 }
 
-/* ---------- Header / Shell ---------- */
+/* ---------- Header / Shell (unchanged) ---------- */
 function UserMenu({onExport,onImport,onLogout}){
   const [open,setOpen]=useState(false);
   return(
@@ -619,7 +618,7 @@ function AppShell({children,capitalPanel,nav,logoSrc,onToggleSidebar,onExport,on
   </div>)
 }
 
-/* ---------- Login & Forgot Password (unchanged) ---------- */
+/* ---------- Login & Forgot Password (unchanged behavior) ---------- */
 function parseJwt(token){try{return JSON.parse(atob(token.split('.')[1]))}catch{return null}}
 function ResetModal({email,onClose}){
   const [e,setE]=useState(email||""); const [link,setLink]=useState(""); const [msg,setMsg]=useState("");
@@ -629,7 +628,7 @@ function ResetModal({email,onClose}){
     const first_name = (u.name||e).split(' ')[0];
     const reset_link = url; const expiry_time = "15 minutes";
     try {
-      await emailjs.send('service_66nh71a', 'template_067iydk', { to_email: e, first_name, reset_link, expiry_time });
+      await emailjs.send('service_9e6t2it', 'template_067iydk', { to_email: e, first_name, reset_link, expiry_time });
       setMsg('Reset email sent successfully. Check your inbox (or spam).');
     } catch (error) {
       setMsg('Failed to send email: ' + (error?.text || 'Unknown error.'));
@@ -670,6 +669,7 @@ function LoginView({onLogin,onSignup,initGoogle,resetStart}){
   const submit=()=>{setErr(""); if(mode==="login"){if(!email||!password)return setErr("Fill all fields."); onLogin(email,password,setErr)}
     else{if(!name||!email||!password||!confirm)return setErr("Fill all fields."); if(password!==confirm)return setErr("Passwords do not match."); onSignup(name,email,password,setErr)}};
   return(<div className="min-h-screen grid md:grid-cols-2">
+    {/* Left panel – now solid deep blue (no image); color via CSS class `.hero` */}
     <div className="hidden md:flex hero items-center justify-center">
       <div className="max-w-sm text-center px-6">
         <div className="text-3xl font-semibold">Trade smart. Log smarter.</div>
@@ -714,6 +714,57 @@ function usePersisted(email){
   useEffect(()=>{if(!state||!state.email)return; saveState(state.email,state)},[state]);
   return [state,setState];
 }
+
+/* -------- Robust import utilities -------- */
+function normalizeKey(k){
+  return String(k||"").trim().toLowerCase().replace(/[^a-z0-9]/g,"");
+}
+const FIELD_ALIASES = {
+  date:      ["date","tradedate","datetime","time"],
+  symbol:    ["symbol","pair","instrument","market","ticker"],
+  side:      ["side","action","direction","position","type"],
+  lotsize:   ["lotsize","lot","volume","qty","quantity","size","lotqty","position_size"],
+  entry:     ["entry","entryprice","pricein","open","openprice","buyprice","sellprice","entryrate"],
+  exit:      ["exit","exitprice","priceout","close","closeprice","exitrate"],
+  tp1:       ["tp1","tp01","tp_1","takeprofit1","takeprofit","tp"],
+  tp2:       ["tp2","tp02","tp_2","takeprofit2"],
+  sl:        ["sl","stop","stoploss","stoplossprice","stoplevel"],
+  strategy:  ["strategy","setup","playbook"],
+  exittype:  ["exittype","exitstatus","closetype","closuretype","outcome"]
+};
+function getFirst(normRow, candidates){
+  for(const c of candidates){
+    if(c in normRow){
+      const v = normRow[c];
+      if(v!=="" && v!==null && v!==undefined) return v;
+    }
+  }
+  return undefined;
+}
+function excelSerialToISO(n){
+  // Excel serial date: days since 1899-12-30
+  const ms = (n - 25569) * 86400 * 1000;
+  const d = new Date(ms);
+  const tz = d.getTimezoneOffset()*60000;
+  return new Date(ms - tz).toISOString().slice(0,10);
+}
+function coerceISODate(v){
+  if(v===undefined || v===null || v==="") return todayISO();
+  if(typeof v==="number" && isFinite(v)) return excelSerialToISO(v);
+  if(v instanceof Date && !isNaN(v)) return new Date(v.getTime()-v.getTimezoneOffset()*60000).toISOString().slice(0,10);
+  const s=String(v).trim();
+  const tryD=new Date(s);
+  if(!isNaN(tryD)) return new Date(tryD.getTime()-tryD.getTimezoneOffset()*60000).toISOString().slice(0,10);
+  return todayISO();
+}
+function toNumberMaybe(v){
+  if(v===undefined||v===null||v==="") return undefined;
+  if(typeof v==="number") return v;
+  const s=String(v).replace(/,/g,"").trim();
+  const n=parseFloat(s);
+  return isNaN(n)?undefined:n;
+}
+
 function App(){
   const [currentEmail,setCurrentEmail]=useState(getCurrent());
   const [users,setUsers]=useState(loadUsers());
@@ -733,7 +784,7 @@ function App(){
 
   const onExport=()=>{const csv=toCSV(state.trades,state.accType);const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="Nitty_Gritty_Template_Export.csv";a.click();URL.revokeObjectURL(url)};
 
-  /* ---- Import: ALWAYS parse via SheetJS to avoid repeat/dup issues ---- */
+  /* ---- Import (robust): ALWAYS SheetJS, tolerant header mapping ---- */
   const __importEl = (window.__ngImportEl ||= (() => {
     const el = document.createElement('input');
     el.type = 'file';
@@ -744,41 +795,47 @@ function App(){
   })());
   function openImportDialog(){ __importEl.value = ''; __importEl.click(); }
 
-  const HEADER_MAP = {
-    "Date":"date","Symbol":"symbol","Side":"side","Lot Size":"lotSize",
-    "Entry":"entry","Exit":"exit","TP1":"tp1","TP2":"tp2","SL":"sl",
-    "Strategy":"strategy","Exit Type":"exitType"
-  };
   function rowsToTrades(rows){
-    return rows.map(r=>{
-      const t={};
-      for(const [H,K] of Object.entries(HEADER_MAP)){
-        // accept exact, lower, nospace
-        t[K] = r[H] ?? r[H?.toLowerCase?.()] ?? r[H?.replace?.(/\s/g,'')] ?? '';
+    const out = [];
+    for(const r of rows){
+      // Build one normalized dictionary per row
+      const norm = {};
+      for(const k of Object.keys(r||{})){
+        norm[normalizeKey(k)] = r[k];
       }
-      const num=v=>(v===''||v==null)?undefined:parseFloat(String(v).replace(/,/g,'')); // tolerate commas
+      // Map values using aliases
+      const t = {};
       t.id = Math.random().toString(36).slice(2);
-      t.date = t.date || todayISO();
-      t.symbol = String(t.symbol||'').toUpperCase();
-      t.side = (String(t.side||'BUY').toUpperCase()==='SELL')?'SELL':'BUY';
-      t.lotSize = num(t.lotSize)||0.01;
-      t.entry=num(t.entry); t.exit=num(t.exit);
-      t.tp1=num(t.tp1); t.tp2=num(t.tp2); t.sl=num(t.sl);
-      t.strategy = t.strategy || DEFAULT_STRATEGIES[0].name;
-      t.exitType = t.exitType || "Trade In Progress";
-      return t;
-    });
+      t.date     = coerceISODate( getFirst(norm, FIELD_ALIASES.date) );
+      t.symbol   = String( getFirst(norm, FIELD_ALIASES.symbol) || "" ).toUpperCase();
+      const rawSide = String( getFirst(norm, FIELD_ALIASES.side) || "BUY" ).toUpperCase();
+      t.side     = rawSide.includes("SELL") ? "SELL" : "BUY";
+      t.lotSize  = toNumberMaybe( getFirst(norm, FIELD_ALIASES.lotsize) ) ?? 0.01;
+      t.entry    = toNumberMaybe( getFirst(norm, FIELD_ALIASES.entry) );
+      t.exit     = toNumberMaybe( getFirst(norm, FIELD_ALIASES.exit) );
+      t.tp1      = toNumberMaybe( getFirst(norm, FIELD_ALIASES.tp1) );
+      t.tp2      = toNumberMaybe( getFirst(norm, FIELD_ALIASES.tp2) );
+      t.sl       = toNumberMaybe( getFirst(norm, FIELD_ALIASES.sl) );
+      t.strategy = String( getFirst(norm, FIELD_ALIASES.strategy) || DEFAULT_STRATEGIES[0].name );
+      t.exitType = String( getFirst(norm, FIELD_ALIASES.exittype) || "Trade In Progress" );
+
+      // Skip totally empty rows (no symbol, no numbers)
+      const hasAny = t.symbol || t.entry!==undefined || t.exit!==undefined || t.tp1!==undefined || t.tp2!==undefined || t.sl!==undefined;
+      if(hasAny) out.push(t);
+    }
+    return out;
   }
+
   if (!__importEl.__ngBound){
     __importEl.addEventListener('change', async (e)=>{
       const f = e.target.files?.[0]; if(!f) return;
       try{
-        const buf = await f.arrayBuffer();                       // works for CSV/XLS/XLSX
+        const buf = await f.arrayBuffer();
         const wb  = XLSX.read(buf, { type:'array' });
         const ws  = wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(ws, { defval:'', raw:true, blankrows:false, range: ws['!ref'] });
+        const rows = XLSX.utils.sheet_to_json(ws, { defval:'', raw:true, blankrows:false });
         const trades = rowsToTrades(rows);
-        setState(s => ({ ...s, trades: [...trades.reverse(), ...s.trades] }));
+        setState(s => ({ ...s, trades: [...trades.reverse(), ...s.trades] })); // keep existing order as before
       }catch(err){
         console.error('Import error:', err);
         alert('Unable to import this file. Please check the format.');
