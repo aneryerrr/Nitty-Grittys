@@ -1,12 +1,11 @@
 html,body,#root{height:100%}
 
+/* Login left panel: deep blue, no image */
 .hero{
-  background-image: url('./hero.jpg'),
-    radial-gradient(1200px 800px at 20% 20%, #1e3a8a 0%, #020617 60%);
-  background-size: cover;
-  background-position: center;
+  background:#0a1d4d; /* deep blue */
 }
 
+/* scrollers */
 .scroll-smooth::-webkit-scrollbar{height:8px;width:8px}
 .scroll-smooth::-webkit-scrollbar-thumb{background:#334155;border-radius:8px}
 
@@ -15,3 +14,10 @@ html,body,#root{height:100%}
 
 /* Subtle row lines in histories */
 .tr-row{border-top:1px solid rgba(51,65,85,.6)}
+
+/* Notes: uniform preview width/appearance */
+.note-card{width:100%}
+.note-preview{width:100%; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;}
+.note-preview *{max-width:100%;}
+
+/* (kept all other styling intact) */
