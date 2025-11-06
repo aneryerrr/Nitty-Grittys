@@ -1,12 +1,12 @@
-/* Nitty Gritty – tiny patch build (rev.4)
-   - Import: robust header/row mapping so *all* rows/columns are captured
-             (trims, case-insensitive, space/underscore-insensitive, common synonyms,
-              Excel serial dates ➜ ISO yyyy-mm-dd, tolerant numeric parsing)
-   - Notes: uniform preview list (same width, nice wrapping & 3-line clamp)
-   - Login: hero background is deep blue (CSS), no image
-   - Kept exactly as-is: Reset History, Best Strategy, Settings icon, Forgot password
+<script type="text/babel" data-presets="react,env">
+/* Nitty Gritty – tiny patch build (rev.5 firebase-sync)
+   - Cloud sync for account data (trades, capital, etc.) via Firebase Firestore keyed by email
+   - Uses your existing Google Sign-In token to sign into Firebase Auth (no UI changes)
+   - Keeps localStorage for fast loads/offline; seamlessly syncs to/from Firestore
+   - Everything else unchanged (Reset History, Best Strategy card, Settings glyph, Forgot password, deep-blue login hero, Notes list width/clamp, robust import)
 */
-const {useState,useMemo,useEffect,useRef} = React;
+
+const { useState, useMemo, useEffect, useRef } = React;
 
 /* ---------- Icons (unchanged) ---------- */
 const iconCls="h-5 w-5";
@@ -24,7 +24,8 @@ const IconNote=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" 
 const IconSave=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l3 3v13a2 2 0 0 1-2 2Z"/><path d="M7 3v5h8"/><path d="M7 13h10"/><path d="M7 17h6"/></svg>);
 
 /* ---------- Data & Utils ---------- */
-const LOGO_PUBLIC="/logo-ng.png"; const LOGO_FALLBACK="./logo-ng.png.png";
+const LOGO_PUBLIC="/logo-ng.png";
+const LOGO_FALLBACK="./logo-ng.png.png";
 const DEFAULT_SYMBOLS=["XAUUSD","US100","US30","EURUSD","BTCUSD","AUDCAD","USDCAD","USDJPY","GBPUSD"];
 const DEFAULT_STRATEGIES=[
   {name:"Trend Line Bounce", color:"default"},
@@ -36,20 +37,89 @@ const DEFAULT_STRATEGIES=[
 const STRAT_COLORS = { default:"", green:"text-green-400", red:"text-red-400", mustard:"text-amber-400" };
 const EXIT_TYPES=["TP","SL","TP1_BE","TP1_SL","BE","Trade In Progress"];
 const ACC_TYPES=["Cent Account","Dollar Account"];
+
 const r2=n=>Math.round(n*100)/100;
 const fmt$=n=>"$"+(isFinite(n)?r2(n):0).toFixed(2);
 const todayISO=()=>{const d=new Date();const tz=d.getTimezoneOffset();return new Date(d.getTime()-tz*60000).toISOString().slice(0,10)};
+
 const USERS_KEY="ng_users_v1";
 const CURR_KEY="ng_current_user_v1";
 const CFG_KEY =(email)=>"ng_cfg_"+email;
+
 const loadUsers=()=>{try{return JSON.parse(localStorage.getItem(USERS_KEY)||"[]")}catch{return[]}};
 const saveUsers=u=>{try{localStorage.setItem(USERS_KEY,JSON.stringify(u))}catch{}};
 const saveCurrent=e=>{try{localStorage.setItem(CURR_KEY,e)}catch{}};
 const getCurrent=()=>{try{return localStorage.getItem(CURR_KEY)||""}catch{return""}};
-const loadState=e=>{try{return JSON.parse(localStorage.getItem("ng_state_"+e)||"null")}catch{return null}};
-const saveState=(e,s)=>{try{localStorage.setItem("ng_state_"+e,JSON.stringify(s))}catch{}};
+
+/* NOTE: loadState/saveState are augmented to also sync with Firebase if available */
+const loadState=(e)=>{try{return JSON.parse(localStorage.getItem("ng_state_"+e)||"null")}catch{return null}};
+const saveState=(e,s)=>{try{localStorage.setItem("ng_state_"+e,JSON.stringify(s))}catch{}; fbSaveState(e,s).catch(()=>{})};
+
 const loadCfg=(e)=>{try{return JSON.parse(localStorage.getItem(CFG_KEY(e))||"null")}catch{return null}};
-const saveCfg=(e,c)=>{try{localStorage.setItem(CFG_KEY(e),JSON.stringify(c))}catch{}};
+const saveCfg=(e,c)=>{try{localStorage.setItem(CFG_KEY(e),JSON.stringify(c))}catch{}; fbSaveCfg(e,c).catch(()=>{})};
+
+/* ---------- Firebase glue (added) ---------- */
+/* Expect window.NG_FIREBASE_CONFIG from index.html */
+function fbInit(){
+  if(!window.firebase || !window.NG_FIREBASE_CONFIG) return null;
+  if(!firebase.apps.length){
+    firebase.initializeApp(window.NG_FIREBASE_CONFIG);
+  }
+  const auth = firebase.auth();
+  const db   = firebase.firestore();
+  // Optional: better perf
+  try{ db.enablePersistence({synchronizeTabs:true}); }catch(e){}
+  return {auth, db};
+}
+window.__fb = fbInit(); // may be null until config is provided
+
+async function fbAuthWithGoogleIdToken(idToken){
+  try{
+    if(!window.__fb) return;
+    const cred = firebase.auth.GoogleAuthProvider.credential(idToken);
+    await window.__fb.auth.signInWithCredential(cred);
+  }catch(e){ console.warn("Firebase Auth signin failed:", e); }
+}
+
+async function fbSaveState(email, state){
+  try{
+    if(!window.__fb || !email) return;
+    const db = window.__fb.db;
+    const docRef = db.collection("ng_users").doc(email.toLowerCase());
+    await docRef.set({
+      ...state,
+      email,
+      _updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, {merge:false});
+  }catch(e){ console.warn("fbSaveState error:", e); }
+}
+
+async function fbLoadState(email){
+  try{
+    if(!window.__fb || !email) return null;
+    const snap = await window.__fb.db.collection("ng_users").doc(email.toLowerCase()).get();
+    return snap.exists ? snap.data() : null;
+  }catch(e){ console.warn("fbLoadState error:", e); return null; }
+}
+
+async function fbSaveCfg(email, cfg){
+  try{
+    if(!window.__fb || !email) return;
+    const db = window.__fb.db;
+    await db.collection("ng_cfg").doc(email.toLowerCase()).set({
+      ...cfg,
+      _updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, {merge:true});
+  }catch(e){ console.warn("fbSaveCfg error:", e); }
+}
+
+async function fbLoadCfg(email){
+  try{
+    if(!window.__fb || !email) return null;
+    const snap = await window.__fb.db.collection("ng_cfg").doc(email.toLowerCase()).get();
+    return snap.exists ? snap.data() : null;
+  }catch(e){ console.warn("fbLoadCfg error:", e); return null; }
+}
 
 /* Tick/pip → $ approximation (unchanged) */
 function perLotValueForMove(symbol,delta,accType){
@@ -90,10 +160,11 @@ const formatUnits=(accType,v)=>accType==="Dollar Account"?r2(v).toFixed(2):r2(v*
 function toCSV(rows,accType){
   const H=["Date","Symbol","Side","Lot Size","Entry","Exit","TP1","TP2","SL","Strategy","Exit Type","P&L","P&L (Units)"];
   const NL="\n"; const BOM="﻿";
-  const esc=s=>{if(s===null||s===undefined)return"";const v=String(s);return /[",\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v};
+  const esc=s=>{ if(s===null||s===undefined)return""; const v=String(s); return /[",\n]/.test(v)?`"${v.replace(/"/g,'""')}"`:v; };
   const out=[H.join(",")];
   for(const t of rows){
-    const v=computeDollarPnL(t,accType); const units=v===null?"":formatUnits(accType,v);
+    const v=computeDollarPnL(t,accType);
+    const units=v===null?"":formatUnits(accType,v);
     const dollars=v===null?"":r2(v);
     const row=[t.date,t.symbol,t.side,t.lotSize,(t.entry??""),(t.exit??""),(t.tp1??""),(t.tp2??""),(t.sl??""),t.strategy,(t.exitType||""),dollars,units];
     out.push(row.map(esc).join(","));
@@ -137,7 +208,8 @@ class ErrorBoundary extends React.Component{
   constructor(p){super(p);this.state={err:null}}
   static getDerivedStateFromError(e){return{err:e}}
   componentDidCatch(e,info){console.error("View crash:",e,info)}
-  render(){ if(this.state.err) return <div className="p-4 text-red-300 bg-red-950/30 border border-red-800 rounded-xl">Something went wrong in this view. Please reload or go back.</div>;
+  render(){
+    if(this.state.err) return <div className="p-4 text-red-300 bg-red-950/30 border border-red-800 rounded-xl">Something went wrong in this view. Please reload or go back.</div>;
     return this.props.children;
   }
 }
@@ -145,10 +217,14 @@ class ErrorBoundary extends React.Component{
 /* ---------- Account Setup Modal (unchanged) ---------- */
 function AccountSetupModal({name,setName,accType,setAccType,capital,setCapital,depositDate,setDepositDate,onClose,email}){
   const [tab,setTab]=useState("personal");
-  const [pw1,setPw1]=useState(""); const [pw2,setPw2]=useState(""); const [msg,setMsg]=useState("");
-  const savePw=()=>{ if(!pw1||pw1.length<6){setMsg("Password must be at least 6 characters.");return}
+  const [pw1,setPw1]=useState("");
+  const [pw2,setPw2]=useState("");
+  const [msg,setMsg]=useState("");
+  const savePw=()=>{
+    if(!pw1||pw1.length<6){setMsg("Password must be at least 6 characters.");return}
     if(pw1!==pw2){setMsg("Passwords do not match.");return}
-    const users=loadUsers(); const i=users.findIndex(u=>u.email.toLowerCase()===(email||"").toLowerCase());
+    const users=loadUsers();
+    const i=users.findIndex(u=>u.email.toLowerCase()===(email||"").toLowerCase());
     if(i>=0){users[i].password=pw1; saveUsers(users); setMsg("Password updated."); setPw1(""); setPw2("")}
   };
   return(
@@ -183,13 +259,15 @@ function AccountSetupModal({name,setName,accType,setAccType,capital,setCapital,d
 function SettingsPanel({name,setName,accType,setAccType,capital,setCapital,depositDate,setDepositDate,email,cfg,setCfg}){
   const [tab,setTab]=useState("personal");
   const [pw1,setPw1]=useState(""); const [pw2,setPw2]=useState(""); const [msg,setMsg]=useState("");
-  const savePw=()=>{ if(!pw1||pw1.length<6){setMsg("Password must be at least 6 characters.");return}
+  const savePw=()=>{
+    if(!pw1||pw1.length<6){setMsg("Password must be at least 6 characters.");return}
     if(pw1!==pw2){setMsg("Passwords do not match.");return}
     const users=loadUsers();const i=users.findIndex(u=>u.email.toLowerCase()===(email||"").toLowerCase());
     if(i>=0){users[i].password=pw1;saveUsers(users);setMsg("Password updated.");setPw1("");setPw2("")}
   };
   const [symText,setSymText]=useState("");
-  const [stratText,setStratText]=useState(""); const [stratColor,setStratColor]=useState("default");
+  const [stratText,setStratText]=useState("");
+  const [stratColor,setStratColor]=useState("default");
   return(
     <div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-6">
       <div className="flex items-center gap-2 mb-4"><IconSettings/><div className="font-semibold">Settings</div></div>
@@ -224,7 +302,9 @@ function SettingsPanel({name,setName,accType,setAccType,capital,setCapital,depos
               <input value={symText} onChange={e=>setSymText(e.target.value.toUpperCase())} placeholder="e.g., XAUUSD" className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/>
               <button onClick={()=>{if(symText && !cfg.symbols.includes(symText)){const n={...cfg,symbols:[...cfg.symbols,symText]};setCfg(n);}}} className="px-3 py-2 rounded-lg border border-slate-700">Add</button>
             </div>
-            <div className="flex flex-wrap gap-2">{cfg.symbols.map(s=>(<span key={s} className="px-2 py-1 rounded-lg border border-slate-700">{s} <button onClick={()=>{const n={...cfg,symbols:cfg.symbols.filter(x=>x!==s)};setCfg(n)}} className="ml-1 text-red-300">×</button></span>))}</div>
+            <div className="flex flex-wrap gap-2">{cfg.symbols.map(s=>(
+              <span key={s} className="px-2 py-1 rounded-lg border border-slate-700">{s} <button onClick={()=>{const n={...cfg,symbols:cfg.symbols.filter(x=>x!==s)};setCfg(n)}} className="ml-1 text-red-300">×</button></span>
+            ))}</div>
           </div>
           <div>
             <div className="font-semibold mb-2">Strategies (color used in tables)</div>
@@ -259,15 +339,22 @@ function SettingsPanel({name,setName,accType,setAccType,capital,setCapital,depos
 
 /* ---------- Trade Modal (unchanged) ---------- */
 function TradeModal({initial,onClose,onSave,onDelete,accType,symbols,strategies}){
-  const i=initial||{}; const [symbol,setSymbol]=useState(i.symbol||symbols[0]); const [side,setSide]=useState(i.side||"BUY");
-  const [date,setDate]=useState(i.date||todayISO()); const [lotSize,setLotSize]=useState(i.lotSize??0.01);
-  const [entry,setEntry]=useState(i.entry??""); const [exit,setExit]=useState(i.exit??"");
-  const [tp1,setTp1]=useState(i.tp1??""); const [tp2,setTp2]=useState(i.tp2??""); const [sl,setSl]=useState(i.sl??"");
-  const [strategy,setStrategy]=useState(i.strategy||(strategies[0]?.name||"")); const [exitType,setExitType]=useState(i.exitType||"TP");
+  const i=initial||{};
+  const [symbol,setSymbol]=useState(i.symbol||symbols[0]);
+  const [side,setSide]=useState(i.side||"BUY");
+  const [date,setDate]=useState(i.date||todayISO());
+  const [lotSize,setLotSize]=useState(i.lotSize??0.01);
+  const [entry,setEntry]=useState(i.entry??"");
+  const [exit,setExit]=useState(i.exit??"");
+  const [tp1,setTp1]=useState(i.tp1??"");
+  const [tp2,setTp2]=useState(i.tp2??"");
+  const [sl,setSl]=useState(i.sl??"");
+  const [strategy,setStrategy]=useState(i.strategy||(strategies[0]?.name||""));
+  const [exitType,setExitType]=useState(i.exitType||"TP");
   const [pnlOverride,setPnlOverride]=useState(i.pnlOverride ?? "");
   const num=v=>(v===""||v===undefined||v===null)?undefined:parseFloat(v);
   const draft=useMemo(()=>({id:i.id,date,symbol,side,lotSize:parseFloat(lotSize||0),entry:num(entry),exit:num(exit),tp1:num(tp1),tp2:num(tp2),sl:num(sl),strategy,exitType,pnlOverride:(pnlOverride===""?undefined:parseFloat(pnlOverride))}),[i.id,date,symbol,side,lotSize,entry,exit,tp1,tp2,sl,strategy,exitType,pnlOverride]);
-  const preview=useMemo(()=>{const v=computeDollarPnL(draft,accType);if(v===null||!isFinite(v))return"-";return`${formatPnlDisplay(accType,v)} (${formatUnits(accType,v)})`},[draft,accType]);
+  const preview=useMemo(()=>{const v=computeDollarPnL(draft,accType);if(v===null||!isFinite(v))return"-";return `${formatPnlDisplay(accType,v)} (${formatUnits(accType,v)})`},[draft,accType]);
   return(
     <Modal title={i.id?"Edit Trade":"Add Trade"} onClose={onClose} maxClass="max-w-4xl">
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -306,26 +393,33 @@ function TradeModal({initial,onClose,onSave,onDelete,accType,symbols,strategies}
 
 /* ---------- Calendar (unchanged) ---------- */
 function CalendarModal({onClose,trades,view,setView,month,setMonth,year,setYear,selectedDate,setSelectedDate,accType}){
-  const monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  const dim=(y,m)=>new Date(y,m+1,0).getDate(); const fd=(y,m)=>new Date(y,m,1).getDay();
+  const monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const dim=(y,m)=>new Date(y,m+1,0).getDate();
+  const fd=(y,m)=>new Date(y,m,1).getDay();
   const byDate=useMemo(()=>{const m={};for(const t of trades){m[t.date]=m[t.date]||[];m[t.date].push(t)}return m},[trades]);
   const pnlByDate=useMemo(()=>{const m={};for(const date in byDate){const ts=byDate[date].filter(t=>t.exitType && t.exitType !== "Trade In Progress");const pnl=ts.reduce((a,t)=>a+ (computeDollarPnL(t,accType) || 0),0);m[date]=pnl}return m},[byDate,accType]);
   return(
     <Modal title="Calendar" onClose={onClose} maxClass="max-w-lg">
       <div className="flex items-center justify-between mb-3">
-        <div className="flex gap-2">{['year','month','day'].map(v=>(<button key={v} onClick={()=>setView(v)} className={`px-3 py-1.5 rounded-lg border ${view===v?'bg-slate-700 border-slate-600':'border-slate-700'}`}>{v.toUpperCase()}</button>))}</div>
-        {view!=="day"&&(<div className="flex items-center gap-2">
-          <button onClick={()=>view==='month'?(setMonth(m=>(m+11)%12),setYear(year-(month===0?1:0))):setYear(year-1)} className="px-2 py-1 border border-slate-700 rounded-lg">&lt;</button>
-          <div className="text-sm">{view==='month'?`${monthNames[month]} ${year}`:year}</div>
-          <button onClick={()=>view==='month'?(setMonth(m=>(m+1)%12),setYear(year+(month===11?1:0))):setYear(year+1)} className="px-2 py-1 border border-slate-700 rounded-lg">&gt;</button>
-        </div>)}
+        <div className="flex gap-2">{['year','month','day'].map(v=>(
+          <button key={v} onClick={()=>setView(v)} className={`px-3 py-1.5 rounded-lg border ${view===v?'bg-slate-700 border-slate-600':'border-slate-700'}`}>{v.toUpperCase()}</button>
+        ))}</div>
+        {view!=="day"&&(
+          <div className="flex items-center gap-2">
+            <button onClick={()=>view==='month'?(setMonth(m=>(m+11)%12),setYear(year-(month===0?1:0))):setYear(year-1)} className="px-2 py-1 border border-slate-700 rounded-lg">&lt;</button>
+            <div className="text-sm">{view==='month'?`${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][month]} ${year}`:year}</div>
+            <button onClick={()=>view==='month'?(setMonth(m=>(m+1)%12),setYear(year+(month===11?1:0))):setYear(year+1)} className="px-2 py-1 border border-slate-700 rounded-lg">&gt;</button>
+          </div>
+        )}
       </div>
       {view==="year"&&(
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-          {monthNames.map((mn,i)=>(<button key={mn} onClick={()=>{setMonth(i);setView('month')}} className="bg-slate-900/50 border border-slate-700 rounded-lg p-3 text-left">
-            <div className="font-semibold mb-1">{mn}</div>
-            <div className="text-slate-400 text-xs">Trades: {trades.filter(t=>(new Date(t.date)).getMonth()===i&&(new Date(t.date)).getFullYear()===year).length}</div>
-          </button>))}
+          {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((mn,i)=>(
+            <button key={mn} onClick={()=>{setMonth(i);setView('month')}} className="bg-slate-900/50 border border-slate-700 rounded-lg p-3 text-left">
+              <div className="font-semibold mb-1">{mn}</div>
+              <div className="text-slate-400 text-xs">Trades: {trades.filter(t=>(new Date(t.date)).getMonth()===i&&(new Date(t.date)).getFullYear()===year).length}</div>
+            </button>
+          ))}
         </div>
       )}
       {view==="month"&&(
@@ -333,12 +427,19 @@ function CalendarModal({onClose,trades,view,setView,month,setMonth,year,setYear,
           <div className="grid grid-cols-7 text-center text-xs text-slate-400 mb-1">{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=><div key={d} className="py-1">{d}</div>)}</div>
           <div className="grid grid-cols-7 gap-1">
             {Array.from({length:fd(year,month)}).map((_,i)=>(<div key={"e"+i}/>))}
-            {Array.from({length:dim(year,month)}).map((_,d)=>{const day=String(d+1).padStart(2,'0');const dateISO=`${year}-${String(month+1).padStart(2,'0')}-${day}`;const items=byDate[dateISO]||[];const pnl=pnlByDate[dateISO]||0;
+            {Array.from({length:dim(year,month)}).map((_,d)=>{
+              const day=String(d+1).padStart(2,'0');
+              const dateISO=`${year}-${String(month+1).padStart(2,'0')}-${day}`;
+              const items=byDate[dateISO]||[];
+              const pnl=pnlByDate[dateISO]||0;
               const colorClass=pnl>0 ? 'border-green-700/60 bg-green-900/10' : pnl<0 ? 'border-red-700/60 bg-red-900/10' : items.length ? 'border-blue-700/60 bg-blue-900/10' : 'border-slate-700 bg-slate-900/30';
-              return(<button key={dateISO} onClick={()=>{setSelectedDate(dateISO);setView('day')}} className={`text-left p-1 rounded-lg border ${colorClass}`}>
-                <div className="text-xs text-slate-400">{d+1}</div>
-                <div className={`text-xs ${pnl>0?'text-green-400':pnl<0?'text-red-400':'text-slate-400'}`}>{pnl!==0 ? formatPnlDisplay(accType,pnl) : ''}</div>
-              </button>)})}
+              return(
+                <button key={dateISO} onClick={()=>{setSelectedDate(dateISO);setView('day')}} className={`text-left p-1 rounded-lg border ${colorClass}`}>
+                  <div className="text-xs text-slate-400">{d+1}</div>
+                  <div className={`text-xs ${pnl>0?'text-green-400':pnl<0?'text-red-400':'text-slate-400'}`}>{pnl!==0 ? formatPnlDisplay(accType,pnl) : ''}</div>
+                </button>
+              )
+            })}
           </div>
         </div>
       )}
@@ -346,10 +447,12 @@ function CalendarModal({onClose,trades,view,setView,month,setMonth,year,setYear,
         <div>
           <div className="text-sm text-slate-300 mb-2">{selectedDate}</div>
           {(byDate[selectedDate]||[]).length===0?(<div className="text-slate-400 text-sm">No trades this day.</div>):(
-            <div className="space-y-2">{(byDate[selectedDate]||[]).map(t=>(<div key={t.id} className="bg-slate-900/50 border border-slate-700 rounded-xl p-3 flex items-center justify-between">
-              <div className="text-sm"><span className="text-blue-300 font-medium">{t.symbol}</span> · {t.side} · Lot {t.lotSize}</div>
-              <div className="text-sm">{typeof t.entry==='number'?fmt$(t.entry):''} → {typeof t.exit==='number'?fmt$(t.exit):''}</div>
-            </div>))}</div>
+            <div className="space-y-2">{(byDate[selectedDate]||[]).map(t=>(
+              <div key={t.id} className="bg-slate-900/50 border border-slate-700 rounded-xl p-3 flex items-center justify-between">
+                <div className="text-sm"><span className="text-blue-300 font-medium">{t.symbol}</span> · {t.side} · Lot {t.lotSize}</div>
+                <div className="text-sm">{typeof t.entry==='number'?fmt$(t.entry):''} → {typeof t.exit==='number'?fmt$(t.exit):''}</div>
+              </div>
+            ))}</div>
           )}
         </div>
       )}
@@ -361,8 +464,11 @@ function CalendarModal({onClose,trades,view,setView,month,setMonth,year,setYear,
 function GeneralStats({trades,accType,capital,depositDate}){
   const realized=trades.filter(t=>new Date(t.date)>=new Date(depositDate)&&t.exitType && t.exitType !== "Trade In Progress");
   const pnl=realized.map(t=>computeDollarPnL(t,accType)).filter(v=>v!==null&&isFinite(v));
-  const total=pnl.reduce((a,b)=>a+b,0); const wins=pnl.filter(v=>v>0).length; const losses=pnl.filter(v=>v<0).length;
-  const open=trades.filter(t=> !t.exitType || t.exitType === "Trade In Progress").length; const wr=(wins+losses)>0?Math.round((wins/(wins+losses))*100):0;
+  const total=pnl.reduce((a,b)=>a+b,0);
+  const wins=pnl.filter(v=>v>0).length;
+  const losses=pnl.filter(v=>v<0).length;
+  const open=trades.filter(t=> !t.exitType || t.exitType === "Trade In Progress").length;
+  const wr=(wins+losses)>0?Math.round((wins/(wins+losses))*100):0;
   return(<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
     <Stat label="Capital" value={accType==='Cent Account'?`${r2(capital*100).toFixed(2)} ¢`:fmt$(capital)}/>
     <Stat label="Realized P&L" value={formatPnlDisplay(accType,total)}/>
@@ -412,16 +518,26 @@ function BestStrategy({trades,accType,strategies}){
   )
 }
 function DetailedStats({trades,accType}){
-  const rows=useMemo(()=>{const m={};for(const t of trades){const k=t.symbol||"N/A";const v=computeDollarPnL(t,accType);const s=m[k]||{count:0,pnl:0};s.count+=1;s.pnl+=(v&&isFinite(v))?v:0;m[k]=s}return Object.entries(m).map(([sym,v])=>({sym,count:v.count,pnl:v.pnl}))},[trades,accType]);
+  const rows=useMemo(()=>{
+    const m={};
+    for(const t of trades){
+      const k=t.symbol||"N/A";
+      const v=computeDollarPnL(t,accType);
+      const s=m[k]||{count:0,pnl:0};
+      s.count+=1; s.pnl+=(v&&isFinite(v))?v:0; m[k]=s;
+    }
+    return Object.entries(m).map(([sym,v])=>({sym,count:v.count,pnl:v.pnl}))
+  },[trades,accType]);
   return(<div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4">
     <div className="text-sm font-semibold mb-2">Detailed Statistics</div>
     <div className="overflow-auto"><table className="min-w-full text-sm"><thead><tr><Th>Symbol</Th><Th>Trades</Th><Th>Total P&L</Th><Th>P&L (Units)</Th></tr></thead>
-      <tbody>{rows.map(r=>(
-        <tr key={r.sym} className="border-t border-slate-700">
-          <Td>{r.sym}</Td><Td>{r.count}</Td>
-          <Td className={r.pnl>0?'text-green-400':r.pnl<0?'text-red-400':'text-amber-400'}>{formatPnlDisplay(accType,r.pnl)}</Td>
-          <Td className={r.pnl>0?'text-green-400':r.pnl<0?'text-red-400':'text-amber-400'}>{formatUnits(accType,r.pnl)}</Td>
-        </tr>))}</tbody></table></div>
+    <tbody>{rows.map(r=>(
+      <tr key={r.sym} className="border-t border-slate-700">
+        <Td>{r.sym}</Td><Td>{r.count}</Td>
+        <Td className={r.pnl>0?'text-green-400':r.pnl<0?'text-red-400':'text-amber-400'}>{formatPnlDisplay(accType,r.pnl)}</Td>
+        <Td className={r.pnl>0?'text-green-400':r.pnl<0?'text-red-400':'text-amber-400'}>{formatUnits(accType,r.pnl)}</Td>
+      </tr>
+    ))}</tbody></table></div>
   </div>)
 }
 
@@ -472,14 +588,8 @@ function Histories({trades,accType,onEdit,onDelete,strategies,onClearAll}){
         </table>
       </div>
       {ask && (
-        <Confirm
-          title="Reset trade history?"
-          message="This will permanently delete all imported and saved trades from your history. Do you want to continue?"
-          confirmText="Continue"
-          cancelText="Discard"
-          onConfirm={()=>{ setAsk(false); onClearAll(); }}
-          onCancel={()=>setAsk(false)}
-        />
+        <Confirm title="Reset trade history?" message="This will permanently delete all imported and saved trades from your history. Do you want to continue?" confirmText="Continue" cancelText="Discard"
+          onConfirm={()=>{ setAsk(false); onClearAll(); }} onCancel={()=>setAsk(false)} />
       )}
     </div>
   )
@@ -490,7 +600,10 @@ function NotesPanel({trades}){
   const [items,setItems]=useState(()=>{try{return JSON.parse(localStorage.getItem("ng_notes")||"[]")}catch{return[]}});
   const [show,setShow]=useState(false);
   const [draft,setDraft]=useState(null);
-  const save=rec=>{let arr=[...items]; if(rec.id){const i=arr.findIndex(x=>x.id===rec.id);if(i>=0)arr[i]=rec}else{arr.unshift({...rec,id:Math.random().toString(36).slice(2)})} setItems(arr); localStorage.setItem("ng_notes",JSON.stringify(arr)); setShow(false);};
+  const save=rec=>{let arr=[...items];
+    if(rec.id){const i=arr.findIndex(x=>x.id===rec.id);if(i>=0)arr[i]=rec}else{arr.unshift({...rec,id:Math.random().toString(36).slice(2)})}
+    setItems(arr); localStorage.setItem("ng_notes",JSON.stringify(arr)); setShow(false);
+  };
   const del=id=>{const arr=items.filter(x=>x.id!==id); setItems(arr); localStorage.setItem("ng_notes",JSON.stringify(arr));};
   return(
     <div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4">
@@ -517,7 +630,9 @@ function NotesPanel({trades}){
   )
 }
 function NoteModal({onClose,onSave,initial,trades}){
-  const i=initial||{}; const [title,setTitle]=useState(i.title||""); const [date,setDate]=useState(i.date||todayISO());
+  const i=initial||{};
+  const [title,setTitle]=useState(i.title||"");
+  const [date,setDate]=useState(i.date||todayISO());
   const [content,setContent]=useState(i.content||"");
   const todaysTrades = trades.filter(t=>t.date===date);
   const [refId,setRefId]=useState(i.refId||"");
@@ -526,8 +641,7 @@ function NoteModal({onClose,onSave,initial,trades}){
   const exec=(cmd)=>document.execCommand(cmd,false,null);
   const changeSize=(px)=>{
     const sel=window.getSelection?.(); if(!sel||sel.rangeCount===0) return;
-    const range=sel.getRangeAt(0);
-    if(!editorRef.current || !editorRef.current.contains(range.commonAncestorContainer)) return;
+    const range=sel.getRangeAt(0); if(!editorRef.current || !editorRef.current.contains(range.commonAncestorContainer)) return;
     document.execCommand("fontSize",false,7);
     const fontNodes=editorRef.current.querySelectorAll('font[size="7"]');
     fontNodes.forEach(n=>{n.removeAttribute("size"); n.style.fontSize=px;});
@@ -620,15 +734,25 @@ function AppShell({children,capitalPanel,nav,logoSrc,onToggleSidebar,onExport,on
 
 /* ---------- Login & Forgot Password (unchanged behavior) ---------- */
 function parseJwt(token){try{return JSON.parse(atob(token.split('.')[1]))}catch{return null}}
+
 function ResetModal({email,onClose}){
-  const [e,setE]=useState(email||""); const [link,setLink]=useState(""); const [msg,setMsg]=useState("");
-  const start=async ()=>{const users=loadUsers();const u=users.find(x=>x.email.toLowerCase()===e.toLowerCase());if(!u){setMsg("No account for that email.");return}
-    const token=Math.random().toString(36).slice(2); const exp=Date.now()+1000*60*15; localStorage.setItem("ng_reset_"+token,JSON.stringify({email:e,exp}));
-    const url=location.origin+location.pathname+"#reset="+token; setLink(url);
+  const [e,setE]=useState(email||"");
+  const [link,setLink]=useState("");
+  const [msg,setMsg]=useState("");
+  const start=async ()=>{
+    const users=loadUsers();
+    const u=users.find(x=>x.email.toLowerCase()===e.toLowerCase());
+    if(!u){setMsg("No account for that email.");return}
+    const token=Math.random().toString(36).slice(2);
+    const exp=Date.now()+1000*60*15;
+    localStorage.setItem("ng_reset_"+token,JSON.stringify({email:e,exp}));
+    const url=location.origin+location.pathname+"#reset="+token;
+    setLink(url);
     const first_name = (u.name||e).split(' ')[0];
-    const reset_link = url; const expiry_time = "15 minutes";
+    const reset_link = url;
+    const expiry_time = "15 minutes";
     try {
-      await emailjs.send('service_9e6t2it', 'template_067iydk', { to_email: e, first_name, reset_link, expiry_time });
+      await emailjs.send('service_66nh71a', 'template_067iydk', { to_email: e, first_name, reset_link, expiry_time });
       setMsg('Reset email sent successfully. Check your inbox (or spam).');
     } catch (error) {
       setMsg('Failed to send email: ' + (error?.text || 'Unknown error.'));
@@ -644,12 +768,17 @@ function ResetModal({email,onClose}){
   </Modal>)
 }
 function NewPasswordModal({token,onClose}){
-  const recRaw=localStorage.getItem("ng_reset_"+token); const rec=recRaw?JSON.parse(recRaw):null;
-  const [pw1,setPw1]=useState(""); const [pw2,setPw2]=useState(""); const [msg,setMsg]=useState("");
-  const confirm=()=>{ if(!rec||Date.now()>rec.exp){setMsg("Link expired.");return}
+  const recRaw=localStorage.getItem("ng_reset_"+token);
+  const rec=recRaw?JSON.parse(recRaw):null;
+  const [pw1,setPw1]=useState("");
+  const [pw2,setPw2]=useState("");
+  const [msg,setMsg]=useState("");
+  const confirm=()=>{
+    if(!rec||Date.now()>rec.exp){setMsg("Link expired.");return}
     if(!pw1||pw1.length<6){setMsg("Password must be at least 6 characters.");return}
     if(pw1!==pw2){setMsg("Passwords do not match.");return}
-    const users=loadUsers();const i=users.findIndex(x=>x.email.toLowerCase()===rec.email.toLowerCase()); if(i>=0){users[i].password=pw1;saveUsers(users); localStorage.removeItem("ng_reset_"+token); setMsg("Password updated. You can close this window.");}
+    const users=loadUsers();const i=users.findIndex(x=>x.email.toLowerCase()===rec.email.toLowerCase());
+    if(i>=0){users[i].password=pw1;saveUsers(users); localStorage.removeItem("ng_reset_"+token); setMsg("Password updated. You can close this window.");}
   };
   return(<Modal title="Create new password" onClose={onClose} maxClass="max-w-md">
     <div className="space-y-3">
@@ -662,14 +791,29 @@ function NewPasswordModal({token,onClose}){
 }
 function LoginView({onLogin,onSignup,initGoogle,resetStart}){
   const [mode,setMode]=useState("login");
-  const [email,setEmail]=useState(""); const [password,setPassword]=useState(""); const [showPw,setShowPw]=useState(false);
-  const [name,setName]=useState(""); const [confirm,setConfirm]=useState(""); const [err,setErr]=useState("");
+  const [email,setEmail]=useState("");
+  const [password,setPassword]=useState("");
+  const [showPw,setShowPw]=useState(false);
+  const [name,setName]=useState("");
+  const [confirm,setConfirm]=useState("");
+  const [err,setErr]=useState("");
   const googleDiv=useRef(null);
-  useEffect(()=>{initGoogle(googleDiv.current,(payloadEmail)=>{setErr(""); onLogin(payloadEmail,"__google__",()=>{})})},[]);
-  const submit=()=>{setErr(""); if(mode==="login"){if(!email||!password)return setErr("Fill all fields."); onLogin(email,password,setErr)}
-    else{if(!name||!email||!password||!confirm)return setErr("Fill all fields."); if(password!==confirm)return setErr("Passwords do not match."); onSignup(name,email,password,setErr)}};
+  useEffect(()=>{
+    initGoogle(googleDiv.current,(payloadEmail)=>{setErr(""); onLogin(payloadEmail,"__google__",()=>{})})
+  },[]);
+  const submit=()=>{
+    setErr("");
+    if(mode==="login"){
+      if(!email||!password)return setErr("Fill all fields.");
+      onLogin(email,password,setErr)
+    } else {
+      if(!name||!email||!password||!confirm)return setErr("Fill all fields.");
+      if(password!==confirm)return setErr("Passwords do not match.");
+      onSignup(name,email,password,setErr)
+    }
+  };
   return(<div className="min-h-screen grid md:grid-cols-2">
-    {/* Left panel – now solid deep blue (no image); color via CSS class `.hero` */}
+    {/* Left panel – now solid deep blue (no image); color via CSS class .hero */}
     <div className="hidden md:flex hero items-center justify-center">
       <div className="max-w-sm text-center px-6">
         <div className="text-3xl font-semibold">Trade smart. Log smarter.</div>
@@ -710,58 +854,67 @@ function LoginView({onLogin,onSignup,initGoogle,resetStart}){
 function usePersisted(email){
   const fresh = () => ({name:"",email:email||"",accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[]});
   const [state,setState]=useState(()=>{const s=loadState(email||getCurrent());return s||fresh()});
-  useEffect(()=>{const loaded = loadState(email); setState(loaded || fresh());}, [email]);
-  useEffect(()=>{if(!state||!state.email)return; saveState(state.email,state)},[state]);
+
+  // When email changes, (1) use local cache immediately; (2) fetch remote and merge/replace
+  useEffect(()=>{
+    const run = async ()=>{
+      if(!email) return;
+      const cached = loadState(email);
+      if(cached) setState(cached);
+      const remote = await fbLoadState(email);
+      if(remote){
+        setState(remote);
+      } else {
+        // First-time user on this device: seed remote with current (cached or fresh)
+        const seed = cached || fresh();
+        await fbSaveState(email, seed);
+        setState(seed);
+      }
+    };
+    run();
+  },[email]);
+
+  // Persist to localStorage and Firestore on every state change
+  useEffect(()=>{ if(state&&state.email){ saveState(state.email,state); }},[state]);
+
   return [state,setState];
 }
 
 /* -------- Robust import utilities -------- */
-function normalizeKey(k){
-  return String(k||"").trim().toLowerCase().replace(/[^a-z0-9]/g,"");
-}
+function normalizeKey(k){ return String(k||"").trim().toLowerCase().replace(/[^a-z0-9]/g,""); }
 const FIELD_ALIASES = {
-  date:      ["date","tradedate","datetime","time"],
-  symbol:    ["symbol","pair","instrument","market","ticker"],
-  side:      ["side","action","direction","position","type"],
-  lotsize:   ["lotsize","lot","volume","qty","quantity","size","lotqty","position_size"],
-  entry:     ["entry","entryprice","pricein","open","openprice","buyprice","sellprice","entryrate"],
-  exit:      ["exit","exitprice","priceout","close","closeprice","exitrate"],
-  tp1:       ["tp1","tp01","tp_1","takeprofit1","takeprofit","tp"],
-  tp2:       ["tp2","tp02","tp_2","takeprofit2"],
-  sl:        ["sl","stop","stoploss","stoplossprice","stoplevel"],
-  strategy:  ["strategy","setup","playbook"],
-  exittype:  ["exittype","exitstatus","closetype","closuretype","outcome"]
+  date: ["date","tradedate","datetime","time"],
+  symbol: ["symbol","pair","instrument","market","ticker"],
+  side: ["side","action","direction","position","type"],
+  lotsize: ["lotsize","lot","volume","qty","quantity","size","lotqty","position_size"],
+  entry: ["entry","entryprice","pricein","open","openprice","buyprice","sellprice","entryrate"],
+  exit: ["exit","exitprice","priceout","close","closeprice","exitrate"],
+  tp1: ["tp1","tp01","tp_1","takeprofit1","takeprofit","tp"],
+  tp2: ["tp2","tp02","tp_2","takeprofit2"],
+  sl: ["sl","stop","stoploss","stoplossprice","stoplevel"],
+  strategy: ["strategy","setup","playbook"],
+  exittype: ["exittype","exitstatus","closetype","closuretype","outcome"]
 };
 function getFirst(normRow, candidates){
-  for(const c of candidates){
-    if(c in normRow){
-      const v = normRow[c];
-      if(v!=="" && v!==null && v!==undefined) return v;
-    }
-  }
+  for(const c of candidates){ if(c in normRow){ const v = normRow[c]; if(v!=="" && v!==null && v!==undefined) return v; } }
   return undefined;
 }
-function excelSerialToISO(n){
-  // Excel serial date: days since 1899-12-30
-  const ms = (n - 25569) * 86400 * 1000;
-  const d = new Date(ms);
-  const tz = d.getTimezoneOffset()*60000;
+function excelSerialToISO(n){ // Excel serial date: days since 1899-12-30
+  const ms = (n - 25569) * 86400 * 1000; const d = new Date(ms); const tz = d.getTimezoneOffset()*60000;
   return new Date(ms - tz).toISOString().slice(0,10);
 }
 function coerceISODate(v){
   if(v===undefined || v===null || v==="") return todayISO();
   if(typeof v==="number" && isFinite(v)) return excelSerialToISO(v);
   if(v instanceof Date && !isNaN(v)) return new Date(v.getTime()-v.getTimezoneOffset()*60000).toISOString().slice(0,10);
-  const s=String(v).trim();
-  const tryD=new Date(s);
+  const s=String(v).trim(); const tryD=new Date(s);
   if(!isNaN(tryD)) return new Date(tryD.getTime()-tryD.getTimezoneOffset()*60000).toISOString().slice(0,10);
   return todayISO();
 }
 function toNumberMaybe(v){
   if(v===undefined||v===null||v==="") return undefined;
   if(typeof v==="number") return v;
-  const s=String(v).replace(/,/g,"").trim();
-  const n=parseFloat(s);
+  const s=String(v).replace(/,/g,"").trim(); const n=parseFloat(s);
   return isNaN(n)?undefined:n;
 }
 
@@ -770,69 +923,80 @@ function App(){
   const [users,setUsers]=useState(loadUsers());
   const [state,setState]=usePersisted(currentEmail);
   const [cfg,setCfg]=useState(()=>loadCfg(currentEmail)||{symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES});
-  useEffect(()=>{if(state?.email) saveCfg(state.email,cfg)},[cfg,state?.email]);
+
+  // Sync cfg from Firestore after sign-in
+  useEffect(()=>{
+    const run = async ()=>{
+      if(!state?.email) return;
+      const remote = await fbLoadCfg(state.email);
+      if(remote){ setCfg(remote); }
+      else { await fbSaveCfg(state.email, cfg); }
+    };
+    run();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[state?.email]);
+
+  useEffect(()=>{ if(state?.email) saveCfg(state.email,cfg) },[cfg,state?.email]);
+
   const [page,setPage]=useState("dashboard");
-  const [showTrade,setShowTrade]=useState(false); const [editItem,setEditItem]=useState(null);
+  const [showTrade,setShowTrade]=useState(false);
+  const [editItem,setEditItem]=useState(null);
   const [showAcct,setShowAcct]=useState(false);
-  const [showCal,setShowCal]=useState(false); const now=new Date(); const [calView,setCalView]=useState("month"); const [calMonth,setCalMonth]=useState(now.getMonth()); const [calYear,setCalYear]=useState(now.getFullYear()); const [calSel,setCalSel]=useState(todayISO());
+  const [showCal,setShowCal]=useState(false);
+  const now=new Date();
+  const [calView,setCalView]=useState("month");
+  const [calMonth,setCalMonth]=useState(now.getMonth());
+  const [calYear,setCalYear]=useState(now.getFullYear());
+  const [calSel,setCalSel]=useState(todayISO());
   const [collapsed,setCollapsed]=useState(false);
-  const [showReset,setShowReset]=useState(false); const [resetToken,setResetToken]=useState("");
+  const [showReset,setShowReset]=useState(false);
+  const [resetToken,setResetToken]=useState("");
 
   useEffect(()=>{const hash=new URLSearchParams(location.hash.slice(1));const tok=hash.get("reset"); if(tok){setResetToken(tok)}},[]);
   useEffect(()=>{if(state&&(!state.name||!state.depositDate)) setShowAcct(true)},[state?.email]);
+
+  // EmailJS init (forgot password)
   useEffect(()=>{if(typeof emailjs !== 'undefined'){emailjs.init({publicKey: "qQucnU6BE7h1zb5Ex"});}},[]);
 
+  // Export CSV
   const onExport=()=>{const csv=toCSV(state.trades,state.accType);const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="Nitty_Gritty_Template_Export.csv";a.click();URL.revokeObjectURL(url)};
 
-  /* ---- Import (robust): ALWAYS SheetJS, tolerant header mapping ---- */
+  /* ---- Import (robust) ---- */
   const __importEl = (window.__ngImportEl ||= (() => {
     const el = document.createElement('input');
-    el.type = 'file';
-    el.accept = '.csv,.xls,.xlsx';
-    el.style.display = 'none';
-    document.body.appendChild(el);
-    return el;
+    el.type = 'file'; el.accept = '.csv,.xls,.xlsx'; el.style.display = 'none'; document.body.appendChild(el); return el;
   })());
   function openImportDialog(){ __importEl.value = ''; __importEl.click(); }
-
   function rowsToTrades(rows){
     const out = [];
     for(const r of rows){
-      // Build one normalized dictionary per row
-      const norm = {};
-      for(const k of Object.keys(r||{})){
-        norm[normalizeKey(k)] = r[k];
-      }
-      // Map values using aliases
+      const norm = {}; for(const k of Object.keys(r||{})){ norm[normalizeKey(k)] = r[k]; }
       const t = {};
       t.id = Math.random().toString(36).slice(2);
-      t.date     = coerceISODate( getFirst(norm, FIELD_ALIASES.date) );
-      t.symbol   = String( getFirst(norm, FIELD_ALIASES.symbol) || "" ).toUpperCase();
+      t.date = coerceISODate( getFirst(norm, FIELD_ALIASES.date) );
+      t.symbol = String( getFirst(norm, FIELD_ALIASES.symbol) || "" ).toUpperCase();
       const rawSide = String( getFirst(norm, FIELD_ALIASES.side) || "BUY" ).toUpperCase();
-      t.side     = rawSide.includes("SELL") ? "SELL" : "BUY";
-      t.lotSize  = toNumberMaybe( getFirst(norm, FIELD_ALIASES.lotsize) ) ?? 0.01;
-      t.entry    = toNumberMaybe( getFirst(norm, FIELD_ALIASES.entry) );
-      t.exit     = toNumberMaybe( getFirst(norm, FIELD_ALIASES.exit) );
-      t.tp1      = toNumberMaybe( getFirst(norm, FIELD_ALIASES.tp1) );
-      t.tp2      = toNumberMaybe( getFirst(norm, FIELD_ALIASES.tp2) );
-      t.sl       = toNumberMaybe( getFirst(norm, FIELD_ALIASES.sl) );
+      t.side = rawSide.includes("SELL") ? "SELL" : "BUY";
+      t.lotSize = toNumberMaybe( getFirst(norm, FIELD_ALIASES.lotsize) ) ?? 0.01;
+      t.entry = toNumberMaybe( getFirst(norm, FIELD_ALIASES.entry) );
+      t.exit  = toNumberMaybe( getFirst(norm, FIELD_ALIASES.exit) );
+      t.tp1   = toNumberMaybe( getFirst(norm, FIELD_ALIASES.tp1) );
+      t.tp2   = toNumberMaybe( getFirst(norm, FIELD_ALIASES.tp2) );
+      t.sl    = toNumberMaybe( getFirst(norm, FIELD_ALIASES.sl) );
       t.strategy = String( getFirst(norm, FIELD_ALIASES.strategy) || DEFAULT_STRATEGIES[0].name );
       t.exitType = String( getFirst(norm, FIELD_ALIASES.exittype) || "Trade In Progress" );
-
-      // Skip totally empty rows (no symbol, no numbers)
       const hasAny = t.symbol || t.entry!==undefined || t.exit!==undefined || t.tp1!==undefined || t.tp2!==undefined || t.sl!==undefined;
       if(hasAny) out.push(t);
     }
     return out;
   }
-
   if (!__importEl.__ngBound){
     __importEl.addEventListener('change', async (e)=>{
       const f = e.target.files?.[0]; if(!f) return;
       try{
         const buf = await f.arrayBuffer();
-        const wb  = XLSX.read(buf, { type:'array' });
-        const ws  = wb.Sheets[wb.SheetNames[0]];
+        const wb = XLSX.read(buf, { type:'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(ws, { defval:'', raw:true, blankrows:false });
         const trades = rowsToTrades(rows);
         setState(s => ({ ...s, trades: [...trades.reverse(), ...s.trades] })); // keep existing order as before
@@ -844,28 +1008,67 @@ function App(){
     __importEl.__ngBound = true;
   }
 
-  const onLogout=()=>{saveCurrent("");setCurrentEmail("")};
+  const onLogout=()=>{ saveCurrent(""); setCurrentEmail(""); if(window.__fb){ window.__fb.auth.signOut().catch(()=>{}); } };
+
+  // Bridge GIS → Firebase Auth (no UI changes)
   const initGoogle=(container,onEmail)=>{
     const clientId=window.GOOGLE_CLIENT_ID;
     if(!window.google||!clientId||!container) return;
-    window.google.accounts.id.initialize({client_id:clientId,callback:(resp)=>{const p=parseJwt(resp.credential); if(p&&p.email){onEmail(p.email)}}});
+    window.google.accounts.id.initialize({
+      client_id:clientId,
+      callback:async (resp)=>{
+        const p=parseJwt(resp.credential);
+        if(p&&p.email){
+          // Sign-in to Firebase with the same Google ID token for secure Firestore access
+          await fbAuthWithGoogleIdToken(resp.credential);
+          onEmail(p.email);
+        }
+      }
+    });
     window.google.accounts.id.renderButton(container,{theme:"outline",size:"large",text:"signin_with",shape:"pill"});
   };
-  const login=(email,password,setErr)=>{const u=users.find(x=>x.email.toLowerCase()===email.toLowerCase());
-    if(!u){ if(password==="__google__"){const nu=[...users,{name:email.split("@")[0],email,password:""}]; setUsers(nu); saveUsers(nu); const fresh={name:email.split("@")[0],email,accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[]}; saveState(email,fresh); saveCurrent(email); setCurrentEmail(email); setCfg({symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES}); return;}
-      setErr("No such user. Please sign up."); return;}
+
+  const login=(email,password,setErr)=>{
+    const u=users.find(x=>x.email.toLowerCase()===email.toLowerCase());
+    if(!u){
+      if(password==="__google__"){
+        const nu=[...users,{name:email.split("@")[0],email,password:""}];
+        setUsers(nu); saveUsers(nu);
+        const fresh={name:email.split("@")[0],email,accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[]};
+        saveState(email,fresh); saveCurrent(email); setCurrentEmail(email);
+        setCfg({symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES});
+        return;
+      }
+      setErr("No such user. Please sign up."); return;
+    }
     if(password!=="__google__" && u.password!==password){setErr("Wrong password.");return}
-    setErr(""); saveCurrent(u.email); setCurrentEmail(u.email); setCfg(loadCfg(u.email)||{symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES});
+    setErr("");
+    saveCurrent(u.email); setCurrentEmail(u.email);
+    setCfg(loadCfg(u.email)||{symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES});
   };
-  const signup=(name,email,password,setErr)=>{if(users.some(x=>x.email.toLowerCase()===email.toLowerCase())){setErr("Email already registered.");return}
+
+  const signup=(name,email,password,setErr)=>{
+    if(users.some(x=>x.email.toLowerCase()===email.toLowerCase())){setErr("Email already registered.");return}
     const u={name,email,password}; const nu=[...users,u]; setUsers(nu); saveUsers(nu);
-    const fresh={name,email,accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[]}; saveState(email,fresh); saveCurrent(email); setCurrentEmail(email);
+    const fresh={name,email,accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[]};
+    saveState(email,fresh); saveCurrent(email); setCurrentEmail(email);
     setCfg({symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES});
   };
+
   const resetStart=()=>{setShowReset(true)};
-  const addOrUpdate=(draft)=>{const id=draft.id||Math.random().toString(36).slice(2); const arr=state.trades.slice(); const idx=arr.findIndex(t=>t.id===id); const rec={...draft,id}; if(idx>=0)arr[idx]=rec; else arr.unshift(rec); setState({...state,trades:arr}); setShowTrade(false); setEditItem(null)};
+
+  const addOrUpdate=(draft)=>{
+    const id=draft.id||Math.random().toString(36).slice(2);
+    const arr=state.trades.slice();
+    const idx=arr.findIndex(t=>t.id===id);
+    const rec={...draft,id};
+    if(idx>=0)arr[idx]=rec; else arr.unshift(rec);
+    setState({...state,trades:arr});
+    setShowTrade(false); setEditItem(null)
+  };
   const delTrade=(id)=>setState({...state,trades:state.trades.filter(t=>t.id!==id)});
   const clearAllTrades=()=>setState({...state,trades:[]});
+
   const openTrades=state.trades.filter(t=> !t.exitType || t.exitType === "Trade In Progress").length;
   const realized=state.trades.filter(t=>new Date(t.date)>=new Date(state.depositDate)&&t.exitType && t.exitType !== "Trade In Progress").map(t=>computeDollarPnL(t,state.accType)).filter(v=>v!==null&&isFinite(v)).reduce((a,b)=>a+b,0);
   const effectiveCapital=state.capital+realized;
@@ -890,9 +1093,9 @@ function App(){
   </>);
 
   const logoSrc=LOGO_PUBLIC;
+
   return(
-    <AppShell capitalPanel={capitalPanel} nav={nav} logoSrc={logoSrc}
-      onToggleSidebar={()=>setCollapsed(v=>!v)} onExport={onExport} onImport={openImportDialog} onLogout={onLogout} sidebarCollapsed={collapsed}>
+    <AppShell capitalPanel={capitalPanel} nav={nav} logoSrc={logoSrc} onToggleSidebar={()=>setCollapsed(v=>!v)} onExport={onExport} onImport={openImportDialog} onLogout={onLogout} sidebarCollapsed={collapsed}>
       {page==="dashboard"&&(<div className="space-y-4">
         <div className="text-sm font-semibold">General statistics</div>
         <GeneralStats trades={state.trades} accType={state.accType} capital={state.capital} depositDate={state.depositDate}/>
@@ -906,9 +1109,7 @@ function App(){
         accType={state.accType} setAccType={v=>setState({...state,accType:v})}
         capital={state.capital} setCapital={v=>setState({...state,capital:v||0})}
         depositDate={state.depositDate} setDepositDate={v=>setState({...state,depositDate:v})}
-        email={state.email}
-        cfg={cfg} setCfg={(n)=>{setCfg(n); saveCfg(state.email,n)}}
-      />)}
+        email={state.email} cfg={cfg} setCfg={(n)=>{setCfg(n); saveCfg(state.email,n)}} />)}
       {showTrade&&(<TradeModal initial={editItem} onClose={()=>{setShowTrade(false);setEditItem(null)}} onSave={addOrUpdate} onDelete={delTrade} accType={state.accType} symbols={cfg.symbols} strategies={cfg.strategies}/>)}
       {showAcct&&(<AccountSetupModal name={state.name} setName={v=>setState({...state,name:v})} accType={state.accType} setAccType={v=>setState({...state,accType:v})} capital={state.capital} setCapital={v=>setState({...state,capital:v||0})} depositDate={state.depositDate} setDepositDate={v=>setState({...state,depositDate:v})} onClose={()=>setShowAcct(false)} email={state.email}/>)}
       {showCal&&(<CalendarModal onClose={()=>setShowCal(false)} trades={state.trades} view={calView} setView={setCalView} month={calMonth} setMonth={setCalMonth} year={calYear} setYear={setCalYear} selectedDate={calSel} setSelectedDate={setCalSel} accType={state.accType}/>)}
@@ -919,3 +1120,4 @@ function App(){
 
 /* -------- Mount -------- */
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
