@@ -4,82 +4,39 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Nitty Gritty</title>
-
   <!-- Strong no-cache for the HTML itself -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
-
   <link rel="icon" href="./logo-ng.png" type="image/png" />
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-
   <!-- Your styles (cache-busted) -->
-  <link rel="stylesheet" href="./styles.css?v=5" />
+  <link rel="stylesheet" href="./styles.css?v=4" />
 </head>
 <body class="bg-slate-950 text-slate-100">
   <div id="root"></div>
-
   <!-- Google Identity Services -->
   <script>
-    window.GOOGLE_CLIENT_ID = "579461879935-qaj9nta2pfbrn17ss5idu2k39p4joir4.apps.googleusercontent.com";
+    window.GOOGLE_CLIENT_ID =
+      "579461879935-qaj9nta2pfbrn17ss5idu2k39p4joir4.apps.googleusercontent.com";
   </script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-
   <!-- React + ReactDOM -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-
   <!-- Tailwind (CDN) -->
   <script src="https://cdn.tailwindcss.com"></script>
-
   <!-- XLS/CSV import (SheetJS) -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-
   <!-- EmailJS (Forgot Password) -->
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-
-  <!-- Firebase (v12.6.0) – App + Analytics + Firestore -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-    import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-analytics.js";
-    import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyAliJ4jal-Bmy1lkEEzGmvqp_G6p6dJasw".replace("6p6d","6p6v"), /* keep exactly as you shared */
-      authDomain: "nittygritty-764f2.firebaseapp.com",
-      projectId: "nittygritty-764f2",
-      storageBucket: "nittygritty-764f2.firebasestorage.app",
-      messagingSenderId: "504726664216",
-      appId: "1:504726664216:web:705e9720008d788930ff6d",
-      measurementId: "G-0ZP9Q3KSB5"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    try {
-      getAnalytics(app);
-    } catch (e) {
-      // Analytics may fail in some environments (e.g. localhost without HTTPS); safe to ignore.
-      console.warn("Analytics init issue (non-fatal):", e);
-    }
-
-    const db = getFirestore(app);
-
-    // Expose Firestore helpers so script.js (Babel + React) can use them
-    window._ngFirebase = {
-      app,
-      db,
-      doc,
-      getDoc,
-      setDoc,
-      serverTimestamp
-    };
-  </script>
-
   <!-- Babel (in-browser) -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
+  <!-- Firebase SDK (compat mode for global access) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <!-- App (cache-busted) -->
-  <script type="text/babel" data-presets="react,env" src="./script.js?v=5"></script>
+  <script type="text/babel" data-presets="react,env" src="./script.js?v=4"></script>
 </body>
 </html>
