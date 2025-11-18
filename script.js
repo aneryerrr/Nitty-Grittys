@@ -626,7 +626,7 @@ function ResetModal({email,onClose}){
     const first_name = (u.name||e).split(' ')[0];
     const reset_link = url; const expiry_time = "15 minutes";
     try {
-      await emailjs.send('service_0j4i9gh', 'template_067iydk', { to_email: e, first_name, reset_link, expiry_time });
+      await emailjs.send('service_rdqgghd', 'template_067iydk', { to_email: e, first_name, reset_link, expiry_time });
       setMsg('Reset email sent successfully. Check your inbox (or spam).');
     } catch (error) {
       setMsg('Failed to send email: ' + (error?.text || 'Unknown error.'));
