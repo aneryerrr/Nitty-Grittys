@@ -53,11 +53,11 @@ const USERS_KEY="ng_users_v1";
 const CURR_KEY="ng_current_user_v1";
 const loadUsers=async ()=>{try{const snap=await db.collection("users").get();return snap.docs.map(d=>d.data())}catch{return[]}};
 const saveUsers=async u=>{try{const batch=db.batch();u.forEach(usr=>{const lower=usr.email.toLowerCase();const ref=db.collection("users").doc(lower);batch.set(ref,usr)});await batch.commit()}catch{console.error("Failed to save users")}};
-const saveCurrent=e=>{try{localStorage.setItem(CURR_KEY,e)}catch{}};
+const saveCurrent=e=>{try{localStorage.setItem(CURR_KEY,e.toLowerCase())}catch{}};
 const getCurrent=()=>{try{return localStorage.getItem(CURR_KEY)||""}catch{return""}};
-const loadState=async e=>{try{if(!e)return null;const d=await db.collection("userStates").doc(e.toLowerCase()).get();return d.exists?d.data().state:null}catch{console.error("Failed to load state");return null}};
+const loadState=async e=>{try{if(!e)return null;const d=await db.collection("userStates").doc(e.toLowerCase()).get();console.log("Loaded state:", d.data()?.state);return d.exists?d.data().state:null}catch{console.error("Failed to load state");return null}};
 const saveState=async (e,s)=>{try{if(!e)return;await db.collection("userStates").doc(e.toLowerCase()).set({state:s},{merge:true});console.log("State saved successfully")}catch{console.error("Failed to save state")}};
-const loadCfg=async e=>{try{if(!e)return null;const d=await db.collection("userStates").doc(e.toLowerCase()).get();return d.exists?d.data().cfg:null}catch{console.error("Failed to load cfg");return null}};
+const loadCfg=async e=>{try{if(!e)return null;const d=await db.collection("userStates").doc(e.toLowerCase()).get();console.log("Loaded cfg:", d.data()?.cfg);return d.exists?d.data().cfg:null}catch{console.error("Failed to load cfg");return null}};
 const saveCfg=async (e,c)=>{try{if(!e)return;await db.collection("userStates").doc(e.toLowerCase()).set({cfg:c},{merge:true});console.log("Cfg saved successfully")}catch{console.error("Failed to save cfg")}};
 /* Tick/pip → $ approximation (unchanged) */
 function perLotValueForMove(symbol,delta,accType){
@@ -621,7 +621,7 @@ function parseJwt(token){try{return JSON.parse(atob(token.split('.')[1]))}catch{
 function ResetModal({email,onClose}){
   const [e,setE]=useState(email||""); const [link,setLink]=useState(""); const [msg,setMsg]=useState("");
   const start=async ()=>{const users=await loadUsers();const u=users.find(x=>x.email.toLowerCase()===e.toLowerCase());if(!u){setMsg("No account for that email.");return}
-    const token=Math.random().toString(36).slice(2); const exp=Date.now()+1000*60*15; await db.collection("resets").doc(token).set({email:e,exp});
+    const token=Math.random().toString(36).slice(2); const exp=Date.now()+1000*60*15; await db.collection("resets").doc(token).set({email:e.toLowerCase(),exp});
     const url=location.origin+location.pathname+"#reset="+token; setLink(url);
     const first_name = (u.name||e).split(' ')[0];
     const reset_link = url; const expiry_time = "15 minutes";
@@ -663,9 +663,9 @@ function LoginView({onLogin,onSignup,initGoogle,resetStart}){
   const [email,setEmail]=useState(""); const [password,setPassword]=useState(""); const [showPw,setShowPw]=useState(false);
   const [name,setName]=useState(""); const [confirm,setConfirm]=useState(""); const [err,setErr]=useState("");
   const googleDiv=useRef(null);
-  useEffect(()=>{initGoogle(googleDiv.current,(payloadEmail)=>{setErr(""); onLogin(payloadEmail,"__google__",setErr)})},[]);
-  const submit=async ()=>{setErr(""); if(mode==="login"){if(!email||!password)return setErr("Fill all fields."); await onLogin(email,password,setErr)}
-    else{if(!name||!email||!password||!confirm)return setErr("Fill all fields."); if(password!==confirm)return setErr("Passwords do not match."); await onSignup(name,email,password,setErr)}};
+  useEffect(()=>{initGoogle(googleDiv.current,(payloadEmail)=>{setErr(""); onLogin(payloadEmail.toLowerCase(),"__google__",setErr)})},[]);
+  const submit=async ()=>{setErr(""); if(mode==="login"){if(!email||!password)return setErr("Fill all fields."); await onLogin(email.toLowerCase(),password,setErr)}
+    else{if(!name||!email||!password||!confirm)return setErr("Fill all fields."); if(password!==confirm)return setErr("Passwords do not match."); await onSignup(name,email.toLowerCase(),password,setErr)}};
   return(<div className="min-h-screen bg-[#0a1d4d] grid md:grid-cols-2">
     {/* Left panel – now solid deep blue (no image); color via CSS class `.hero` */}
     <div className="hidden md:flex hero items-center justify-center">
@@ -705,7 +705,7 @@ function LoginView({onLogin,onSignup,initGoogle,resetStart}){
 }
 /* ---------- App ---------- */
 function usePersisted(email){
-  const fresh = () => ({name:"",email:email||"",accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[]});
+  const fresh = () => ({name:"",email:email.toLowerCase()||"",accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[]});
   const [state,setStateInternal]=useState(null);
   useEffect(()=>{if(email)loadState(email).then(s=>setStateInternal(s||fresh())).catch(console.error)},[email]);
   const setState = (newSOrFn) => {
@@ -806,16 +806,16 @@ function App(){
   const initGoogle=(container,onEmail)=>{
     const clientId=window.GOOGLE_CLIENT_ID;
     if(!window.google||!clientId||!container) return;
-    window.google.accounts.id.initialize({client_id:clientId,callback:(resp)=>{const p=parseJwt(resp.credential); if(p&&p.email){onEmail(p.email)}}});
+    window.google.accounts.id.initialize({client_id:clientId,callback:(resp)=>{const p=parseJwt(resp.credential); if(p&&p.email){onEmail(p.email.toLowerCase())}}});
     window.google.accounts.id.renderButton(container,{theme:"outline",size:"large",text:"signin_with",shape:"pill"});
   };
-  const login=async (email,password,setErr)=>{const users=await loadUsers();const u=users.find(x=>x.email.toLowerCase()===email.toLowerCase());
-    if(!u){ if(password==="__google__"){const nu=[...users,{name:email.split("@")[0],email,password:""}]; await saveUsers(nu); const fresh={name:email.split("@")[0],email,accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[]}; await saveState(email,fresh); saveCurrent(email); setCurrentEmail(email); setCfg({symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES}); return;}
+  const login=async (email,password,setErr)=>{email = email.toLowerCase();const users=await loadUsers();const u=users.find(x=>x.email.toLowerCase()===email);
+    if(!u){ if(password==="__google__"){const nu=[...users,{name:email.split("@")[0],email:email,password:""}]; await saveUsers(nu); const fresh={name:email.split("@")[0],email:email,accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[]}; await saveState(email,fresh); saveCurrent(email); setCurrentEmail(email); setCfg({symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES}); return;}
       setErr("No such user. Please sign up."); return;}
     if(password!=="__google__" && u.password!==password){setErr("Wrong password.");return}
     setErr(""); saveCurrent(u.email); setCurrentEmail(u.email); setCfg(await loadCfg(u.email)||{symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES});
   };
-  const signup=async (name,email,password,setErr)=>{const users=await loadUsers();if(users.some(x=>x.email.toLowerCase()===email.toLowerCase())){setErr("Email already registered.");return}
+  const signup=async (name,email,password,setErr)=>{email = email.toLowerCase();const users=await loadUsers();if(users.some(x=>x.email.toLowerCase()===email)){setErr("Email already registered.");return}
     const u={name,email,password}; const nu=[...users,u]; await saveUsers(nu);
     const fresh={name,email,accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[]}; await saveState(email,fresh); saveCurrent(email); setCurrentEmail(email);
     setCfg({symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES});
