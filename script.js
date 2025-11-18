@@ -726,6 +726,16 @@ function App(){
     setCfgInternal(newC);
     if(currentEmail) saveCfg(currentEmail, newC).catch(console.error);
   };
+  useEffect(() => {
+    if (state && currentEmail) {
+      saveState(currentEmail, state);
+    }
+  }, [state, currentEmail]);
+  useEffect(() => {
+    if (cfg && currentEmail) {
+      saveCfg(currentEmail, cfg);
+    }
+  }, [cfg, currentEmail]);
   const [page,setPage]=useState("dashboard");
   const [showTrade,setShowTrade]=useState(false); const [editItem,setEditItem]=useState(null);
   const [showAcct,setShowAcct]=useState(false);
