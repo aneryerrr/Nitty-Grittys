@@ -47,18 +47,18 @@ const STRAT_COLORS = { default:"", green:"text-green-400", red:"text-red-400", m
 const EXIT_TYPES=["TP","SL","TP1_BE","TP1_SL","BE","Trade In Progress"];
 const ACC_TYPES=["Cent Account","Dollar Account"];
 const r2=n=>Math.round(n*100)/100;
-const fmt$=n=>"$"+(isFinite(n)?r2(n):0).toFixed(2);
+const fmt$$ =n=>" $$"+(isFinite(n)?r2(n):0).toFixed(2);
 const todayISO=()=>{const d=new Date();const tz=d.getTimezoneOffset();return new Date(d.getTime()-tz*60000).toISOString().slice(0,10)};
 const USERS_KEY="ng_users_v1";
 const CURR_KEY="ng_current_user_v1";
-const loadUsers=async ()=>{try{const snap=await db.collection("users").get();return snap.docs.map(d=>d.data())}catch{return[]}};
-const saveUsers=async u=>{try{const batch=db.batch();u.forEach(usr=>{const lower=usr.email.toLowerCase();const ref=db.collection("users").doc(lower);batch.set(ref,usr)});await batch.commit()}catch{}};
+const loadUsers=async ()=>{try{const snap=await db.collection("users").get();return snap.docs.map(d=>d.data())}catch(e){console.error("loadUsers error:", e); return[]}};
+const saveUsers=async u=>{try{const batch=db.batch();u.forEach(usr=>{const lower=usr.email.toLowerCase();const ref=db.collection("users").doc(lower);batch.set(ref,usr)});await batch.commit()}catch(e){console.error("saveUsers error:", e)}};
 const saveCurrent=e=>{try{localStorage.setItem(CURR_KEY,e)}catch{}};
 const getCurrent=()=>{try{return localStorage.getItem(CURR_KEY)||""}catch{return""}};
-const loadState=async e=>{try{if(!e)return null;const d=await db.collection("userStates").doc(e.toLowerCase()).get();return d.exists?d.data().state:null}catch{return null}};
-const saveState=async (e,s)=>{try{if(!e)return;await db.collection("userStates").doc(e.toLowerCase()).set({state:s},{merge:true})}catch{}};
-const loadCfg=async e=>{try{if(!e)return null;const d=await db.collection("userStates").doc(e.toLowerCase()).get();return d.exists?d.data().cfg:null}catch{return null}};
-const saveCfg=async (e,c)=>{try{if(!e)return;await db.collection("userStates").doc(e.toLowerCase()).set({cfg:c},{merge:true})}catch{}};
+const loadState=async e=>{try{if(!e)return null;const d=await db.collection("userStates").doc(e.toLowerCase()).get();return d.exists?d.data().state:null}catch(e){console.error("loadState error:", e); return null}};
+const saveState=async (e,s)=>{try{if(!e)return;await db.collection("userStates").doc(e.toLowerCase()).set({state:s},{merge:true})}catch(e){console.error("saveState error:", e)}};
+const loadCfg=async e=>{try{if(!e)return null;const d=await db.collection("userStates").doc(e.toLowerCase()).get();return d.exists?d.data().cfg:null}catch(e){console.error("loadCfg error:", e); return null}};
+const saveCfg=async (e,c)=>{try{if(!e)return;await db.collection("userStates").doc(e.toLowerCase()).set({cfg:c},{merge:true})}catch(e){console.error("saveCfg error:", e)}};
 /* Tick/pip → $ approximation (unchanged) */
 function perLotValueForMove(symbol,delta,accType){
   const abs=Math.abs(delta);const isStd=accType==="Dollar Account";const mult=std=>isStd?std:std/100;
@@ -349,7 +349,7 @@ function CalendarModal({onClose,trades,view,setView,month,setMonth,year,setYear,
           {(byDate[selectedDate]||[]).length===0?(<div className="text-slate-400 text-sm">No trades this day.</div>):(
             <div className="space-y-2">{(byDate[selectedDate]||[]).map(t=>(<div key={t.id} className="bg-slate-900/50 border border-slate-700 rounded-xl p-3 flex items-center justify-between">
               <div className="text-sm"><span className="text-blue-300 font-medium">{t.symbol}</span> · {t.side} · Lot {t.lotSize}</div>
-              <div className="text-sm">{typeof t.entry==='number'?fmt$(t.entry):''} → {typeof t.exit==='number'?fmt$(t.exit):''}</div>
+              <div className="text-sm">{typeof t.entry==='number'?fmt$$ (t.entry):''} → {typeof t.exit==='number'?fmt $$(t.exit):''}</div>
             </div>))}</div>
           )}
         </div>
@@ -626,7 +626,7 @@ function ResetModal({email,onClose}){
     const first_name = (u.name||e).split(' ')[0];
     const reset_link = url; const expiry_time = "15 minutes";
     try {
-      await emailjs.send('service_rdqgghd', 'template_067iydk', { to_email: e, first_name, reset_link, expiry_time });
+      await emailjs.send('service_m3gghhd', 'template_067iydk', { to_email: e, first_name, reset_link, expiry_time });
       setMsg('Reset email sent successfully. Check your inbox (or spam).');
     } catch (error) {
       setMsg('Failed to send email: ' + (error?.text || 'Unknown error.'));
@@ -816,7 +816,7 @@ function App(){
   const clearAllTrades=()=>setState({...state,trades:[]});
   if(resetToken){return <NewPasswordModal token={resetToken} onClose={()=>{setResetToken(""); location.hash=""}}/>}
   if(!currentEmail){return <><LoginView onLogin={login} onSignup={signup} initGoogle={initGoogle} resetStart={resetStart}/>{showReset&&<ResetModal email="" onClose={()=>setShowReset(false)}/>}</>}
-  if (!state || !cfg) return <div>Loading...</div>;
+  if (!state || !cfg) return <div className="min-h-screen bg-[#0a1d4d] flex items-center justify-center"><img src={LOGO_PUBLIC} onError={e=>e.currentTarget.src=LOGO_FALLBACK} className="h-32 w-32 animate-pulse" alt="Loading..." /></div>;
   const openTrades=state.trades.filter(t=> !t.exitType || t.exitType === "Trade In Progress").length;
   const realized=state.trades.filter(t=>new Date(t.date)>=new Date(state.depositDate)&&t.exitType && t.exitType !== "Trade In Progress").map(t=>computeDollarPnL(t,state.accType)).filter(v=>v!==null&&isFinite(v)).reduce((a,b)=>a+b,0);
   const effectiveCapital=state.capital+realized;
