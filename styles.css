@@ -16,10 +16,11 @@ html,body,#root{height:100%}
 .note-preview *{max-width:100%;}
 /* (kept all other styling intact) */
 /* Loading logo spin animation */
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+@keyframes pulse {
+  0% { opacity: 0.5; }
+  50% { opacity: 1; }
+  100% { opacity: 0.5; }
 }
 .loading-logo {
-  animation: spin 2s linear infinite;
+  animation: pulse 1.5s infinite;
 }
