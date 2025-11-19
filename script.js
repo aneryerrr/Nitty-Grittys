@@ -628,10 +628,12 @@ function ResetModal({email,onClose}){
     const first_name = (u.name||e).split(' ')[0];
     const reset_link = url; const expiry_time = "15 minutes";
     try {
+      console.log('Sending reset email to', e);
       await emailjs.send('service_rdqgghd', 'template_067iydk', { to_email: e, first_name, reset_link, expiry_time });
+      console.log('Email sent successfully');
       setMsg('Reset email sent successfully. Check your inbox (or spam).');
     } catch (error) {
-      console.error(error);
+      console.error('EmailJS error:', error);
       setMsg('Failed to send email: ' + (error?.text || 'Unknown error.'));
     }
   }
@@ -717,7 +719,7 @@ function usePersisted(email){
     if(email) saveState(email, newS).catch(console.error);
   };
   useEffect(() => {
-    if (email && state) {
+    if (state && email) {
       saveState(email, state).catch(console.error);
     }
   }, [state, email]);
@@ -789,7 +791,11 @@ function App(){
       try{
         const buf = await f.arrayBuffer();
         const wb = XLSX.read(buf, { type:'array', cellDates: true });
-        const ws = wb.Sheets[wb.SheetNames[0]];
+        if (!wb) throw new Error("Failed to read workbook");
+        if (!wb.SheetNames || !wb.SheetNames.length) throw new Error("No sheets in workbook");
+        const sheetName = wb.SheetNames[0];
+        const ws = wb.Sheets[sheetName];
+        if (!ws) throw new Error("No sheet found in workbook");
         const rows = XLSX.utils.sheet_to_json(ws, { defval:'', raw:true, blankrows:false });
         const trades = rowsToTrades(rows);
         setState(s => ({ ...s, trades: [...trades.reverse(), ...s.trades] })); // keep existing order as before
@@ -901,15 +907,15 @@ const coerceISODate = v => {
   return todayISO();
 };
 const FIELD_ALIASES = {
-  date: ['date', 'tradedate', 'entrydate', 'exitdate'],
+  date: ['date', 'trade date', 'entry date', 'exit date'],
   symbol: ['symbol', 'pair', 'instrument', 'asset'],
-  side: ['side', 'direction', 'type', 'action', 'buysell'],
-  lotsize: ['lotsize', 'size', 'volume', 'quantity'],
-  entry: ['entry', 'entryprice', 'openprice'],
-  exit: ['exit', 'exitprice', 'closeprice'],
-  tp1: ['tp1', 'takeprofit1', 'tp', 'target1'],
-  tp2: ['tp2', 'takeprofit2', 'target2'],
-  sl: ['sl', 'stoploss', 'stop'],
+  side: ['side', 'direction', 'type', 'action', 'buy/sell'],
+  lotsize: ['lotsize', 'lot size', 'size', 'volume', 'quantity'],
+  entry: ['entry', 'entry price', 'open price'],
+  exit: ['exit', 'exit price', 'close price'],
+  tp1: ['tp1', 'take profit 1', 'tp', 'target 1'],
+  tp2: ['tp2', 'take profit 2', 'target 2'],
+  sl: ['sl', 'stop loss', 'stop'],
   strategy: ['strategy', 'setup', 'reason'],
-  exittype: ['exittype', 'exittype', 'closetype', 'outcome']
+  exittype: ['exittype', 'exit type', 'close type', 'outcome']
 };
