@@ -631,6 +631,7 @@ function ResetModal({email,onClose}){
       await emailjs.send('service_rdqgghd', 'template_067iydk', { to_email: e, first_name, reset_link, expiry_time });
       setMsg('Reset email sent successfully. Check your inbox (or spam).');
     } catch (error) {
+      console.error(error);
       setMsg('Failed to send email: ' + (error?.text || 'Unknown error.'));
     }
   }
@@ -715,6 +716,11 @@ function usePersisted(email){
     setStateInternal(newS);
     if(email) saveState(email, newS).catch(console.error);
   };
+  useEffect(() => {
+    if (email && state) {
+      saveState(email, state).catch(console.error);
+    }
+  }, [state, email]);
   return [state,setState];
 }
 function App(){
@@ -895,15 +901,15 @@ const coerceISODate = v => {
   return todayISO();
 };
 const FIELD_ALIASES = {
-  date: ['date', 'trade date', 'entry date', 'exit date'],
+  date: ['date', 'tradedate', 'entrydate', 'exitdate'],
   symbol: ['symbol', 'pair', 'instrument', 'asset'],
-  side: ['side', 'direction', 'type', 'action', 'buy/sell'],
-  lotsize: ['lotsize', 'lot size', 'size', 'volume', 'quantity'],
-  entry: ['entry', 'entry price', 'open price'],
-  exit: ['exit', 'exit price', 'close price'],
-  tp1: ['tp1', 'take profit 1', 'tp', 'target 1'],
-  tp2: ['tp2', 'take profit 2', 'target 2'],
-  sl: ['sl', 'stop loss', 'stop'],
+  side: ['side', 'direction', 'type', 'action', 'buysell'],
+  lotsize: ['lotsize', 'size', 'volume', 'quantity'],
+  entry: ['entry', 'entryprice', 'openprice'],
+  exit: ['exit', 'exitprice', 'closeprice'],
+  tp1: ['tp1', 'takeprofit1', 'tp', 'target1'],
+  tp2: ['tp2', 'takeprofit2', 'target2'],
+  sl: ['sl', 'stoploss', 'stop'],
   strategy: ['strategy', 'setup', 'reason'],
-  exittype: ['exittype', 'exit type', 'close type', 'outcome']
+  exittype: ['exittype', 'exittype', 'closetype', 'outcome']
 };
