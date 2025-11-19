@@ -19,6 +19,7 @@ const firebaseConfig = {
 };
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+const auth = firebase.auth();
 /* ---------- Icons (unchanged) ---------- */
 const iconCls="h-5 w-5";
 const IconUser=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Z"/><path d="M4 20a8 8 0 0 1 16 0Z"/></svg>);
@@ -49,16 +50,13 @@ const ACC_TYPES=["Cent Account","Dollar Account"];
 const r2=n=>Math.round(n*100)/100;
 const fmt$=n=>"$"+(isFinite(n)?r2(n):0).toFixed(2);
 const todayISO=()=>{const d=new Date();const tz=d.getTimezoneOffset();return new Date(d.getTime()-tz*60000).toISOString().slice(0,10)};
-const USERS_KEY="ng_users_v1";
-const CURR_KEY="ng_current_user_v1";
-const loadUsers=async ()=>{try{const snap=await db.collection("users").get();return snap.docs.map(d=>d.data())}catch{return[]}};
-const saveUsers=async u=>{try{const batch=db.batch();u.forEach(usr=>{const lower=usr.email.toLowerCase();const ref=db.collection("users").doc(lower);batch.set(ref,usr)});await batch.commit()}catch{console.error("Failed to save users")}};
-const saveCurrent=e=>{try{localStorage.setItem(CURR_KEY,e.toLowerCase())}catch{}};
+const CURR_KEY="ng_current_uid_v1";
+const saveCurrent=uid=>{try{localStorage.setItem(CURR_KEY,uid)}catch{}};
 const getCurrent=()=>{try{return localStorage.getItem(CURR_KEY)||""}catch{return""}};
-const loadState=async e=>{try{if(!e)return null;const d=await db.collection("userStates").doc(e.toLowerCase()).get();console.log("Loaded state:", d.data()?.state);return d.exists?d.data().state:null}catch{console.error("Failed to load state");return null}};
-const saveState=async (e,s)=>{try{if(!e)return;await db.collection("userStates").doc(e.toLowerCase()).set({state:s},{merge:true});console.log("State saved successfully")}catch{console.error("Failed to save state")}};
-const loadCfg=async e=>{try{if(!e)return null;const d=await db.collection("userStates").doc(e.toLowerCase()).get();console.log("Loaded cfg:", d.data()?.cfg);return d.exists?d.data().cfg:null}catch{console.error("Failed to load cfg");return null}};
-const saveCfg=async (e,c)=>{try{if(!e)return;await db.collection("userStates").doc(e.toLowerCase()).set({cfg:c},{merge:true});console.log("Cfg saved successfully")}catch{console.error("Failed to save cfg")}};
+const loadState=async uid=>{try{if(!uid)return null;const d=await db.collection("userStates").doc(uid).get();console.log("Loaded state:", d.data()?.state);return d.exists?d.data().state:null}catch{console.error("Failed to load state");return null}};
+const saveState=async (uid,s)=>{try{if(!uid)return;await db.collection("userStates").doc(uid).set({state:s},{merge:true});console.log("State saved successfully")}catch{console.error("Failed to save state")}};
+const loadCfg=async uid=>{try{if(!uid)return null;const d=await db.collection("userStates").doc(uid).get();console.log("Loaded cfg:", d.data()?.cfg);return d.exists?d.data().cfg:null}catch{console.error("Failed to load cfg");return null}};
+const saveCfg=async (uid,c)=>{try{if(!uid)return;await db.collection("userStates").doc(uid).set({cfg:c},{merge:true});console.log("Cfg saved successfully")}catch{console.error("Failed to save cfg")}};
 /* Tick/pip → $ approximation (unchanged) */
 function perLotValueForMove(symbol,delta,accType){
   const abs=Math.abs(delta);const isStd=accType==="Dollar Account";const mult=std=>isStd?std:std/100;
@@ -147,13 +145,12 @@ class ErrorBoundary extends React.Component{
   }
 }
 /* ---------- Account Setup Modal (unchanged) ---------- */
-function AccountSetupModal({name,setName,accType,setAccType,capital,setCapital,depositDate,setDepositDate,onClose,email}){
+function AccountSetupModal({name,setName,accType,setAccType,capital,setCapital,depositDate,setDepositDate,onClose}){
   const [tab,setTab]=useState("personal");
   const [pw1,setPw1]=useState(""); const [pw2,setPw2]=useState(""); const [msg,setMsg]=useState("");
   const savePw=async ()=>{ if(!pw1||pw1.length<6){setMsg("Password must be at least 6 characters.");return}
     if(pw1!==pw2){setMsg("Passwords do not match.");return}
-    const users=await loadUsers(); const i=users.findIndex(u=>u.email.toLowerCase()===(email||"").toLowerCase());
-    if(i>=0){users[i].password=pw1; await saveUsers(users); setMsg("Password updated."); setPw1(""); setPw2("")}
+    try{await auth.currentUser.updatePassword(pw1); setMsg("Password updated."); setPw1(""); setPw2("")}catch(err){setMsg(err.message)}
   };
   const firstName = name.split(' ')[0] || 'User';
   const title = `Welcome, ${firstName}! Please set up your account`;
@@ -185,13 +182,12 @@ function AccountSetupModal({name,setName,accType,setAccType,capital,setCapital,d
   )
 }
 /* ---------- Settings Panel (unchanged UI/glyph) ---------- */
-function SettingsPanel({name,setName,accType,setAccType,capital,setCapital,depositDate,setDepositDate,email,cfg,setCfg}){
+function SettingsPanel({name,setName,accType,setAccType,capital,setCapital,depositDate,setDepositDate,cfg,setCfg}){
   const [tab,setTab]=useState("personal");
   const [pw1,setPw1]=useState(""); const [pw2,setPw2]=useState(""); const [msg,setMsg]=useState("");
   const savePw=async ()=>{ if(!pw1||pw1.length<6){setMsg("Password must be at least 6 characters.");return}
     if(pw1!==pw2){setMsg("Passwords do not match.");return}
-    const users=await loadUsers();const i=users.findIndex(u=>u.email.toLowerCase()===(email||"").toLowerCase());
-    if(i>=0){users[i].password=pw1;await saveUsers(users);setMsg("Password updated.");setPw1("");setPw2("")}
+    try{await auth.currentUser.updatePassword(pw1); setMsg("Password updated."); setPw1(""); setPw2("")}catch(err){setMsg(err.message)}
   };
   const [symText,setSymText]=useState("");
   const [stratText,setStratText]=useState(""); const [stratColor,setStratColor]=useState("default");
@@ -489,11 +485,11 @@ function Histories({trades,accType,onEdit,onDelete,strategies,onClearAll}){
 function NotesPanel({trades}){
   const [items,setItems]=useState([]);
   useEffect(()=>{loadNotes().then(setItems).catch(console.error)},[]);
-  const loadNotes=async ()=>{const email=getCurrent().toLowerCase();if(!email)return[];const d=await db.collection("userStates").doc(email).get();return d.exists?(d.data().notes||[]):[]};
+  const loadNotes=async ()=>{const uid=getCurrent();if(!uid)return[];const d=await db.collection("userStates").doc(uid).get();return d.exists?(d.data().notes||[]):[]};
   const [show,setShow]=useState(false);
   const [draft,setDraft]=useState(null);
-  const save=async rec=>{let arr=[...items]; if(rec.id){const i=arr.findIndex(x=>x.id===rec.id);if(i>=0)arr[i]=rec}else{arr.unshift({...rec,id:Math.random().toString(36).slice(2)})} setItems(arr); const email=getCurrent().toLowerCase();await db.collection("userStates").doc(email).set({notes:arr},{merge:true}).catch(console.error); setShow(false);};
-  const del=id=>{const arr=items.filter(x=>x.id!==id); setItems(arr); const email=getCurrent().toLowerCase();db.collection("userStates").doc(email).set({notes:arr},{merge:true}).catch(console.error);};
+  const save=async rec=>{let arr=[...items]; if(rec.id){const i=arr.findIndex(x=>x.id===rec.id);if(i>=0)arr[i]=rec}else{arr.unshift({...rec,id:Math.random().toString(36).slice(2)})} setItems(arr); const uid=getCurrent();await db.collection("userStates").doc(uid).set({notes:arr},{merge:true}).catch(console.error); setShow(false);};
+  const del=id=>{const arr=items.filter(x=>x.id!==id); setItems(arr); const uid=getCurrent();db.collection("userStates").doc(uid).set({notes:arr},{merge:true}).catch(console.error);};
   return(
     <div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4">
       <div className="flex items-center justify-between mb-2"><div className="flex items-center gap-2"><IconNote/><div className="text-sm font-semibold">Notes</div></div>
@@ -619,47 +615,14 @@ function AppShell({children,capitalPanel,nav,logoSrc,onToggleSidebar,onExport,on
   </div>)
 }
 /* ---------- Login & Forgot Password (unchanged behavior) ---------- */
-function parseJwt(token){try{return JSON.parse(atob(token.split('.')[1]))}catch{return null}}
 function ResetModal({email,onClose}){
-  const [e,setE]=useState(email||""); const [link,setLink]=useState(""); const [msg,setMsg]=useState("");
-  const start=async ()=>{const users=await loadUsers();const u=users.find(x=>x.email.toLowerCase()===e.toLowerCase());if(!u){setMsg("No account for that email.");return}
-    const token=Math.random().toString(36).slice(2); const exp=Date.now()+1000*60*15; await db.collection("resets").doc(token).set({email:e.toLowerCase(),exp});
-    const url=location.origin+location.pathname+"#reset="+token; setLink(url);
-    const first_name = (u.name||e).split(' ')[0];
-    const reset_link = url; const expiry_time = "15 minutes";
-    try {
-      console.log('Sending reset email to', e);
-      await emailjs.send('service_rdqgghd', 'template_067iydk', { to_email: e, first_name, reset_link, expiry_time });
-      console.log('Email sent successfully');
-      setMsg('Reset email sent successfully. Check your inbox (or spam).');
-    } catch (error) {
-      console.error('EmailJS error:', error);
-      setMsg('Failed to send email: ' + (error?.text || 'Unknown error.'));
-    }
-  }
+  const [e,setE]=useState(email||""); const [msg,setMsg]=useState("");
+  const start=async ()=>{try{await auth.sendPasswordResetEmail(e); setMsg('Reset email sent successfully. Check your inbox (or spam).');}catch(error){setMsg('Failed to send email: ' + (error.message || 'Unknown error.'));}}
   return(<Modal title="Password reset" onClose={onClose} maxClass="max-w-md">
     <div className="space-y-3">
       <div><label className="text-sm text-slate-300">Your email</label><input value={e} onChange={ev=>setE(ev.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
       <button onClick={start} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500">Send reset link</button>
       {msg&&<div className="text-sky-400 text-sm">{msg}</div>}
-      {link&&<div className="text-xs break-all text-slate-300 mt-2">{link}</div>}
-    </div>
-  </Modal>)
-}
-function NewPasswordModal({token,onClose}){
-  const [pw1,setPw1]=useState(""); const [pw2,setPw2]=useState(""); const [msg,setMsg]=useState("");
-  const confirm=async ()=>{ const d=await db.collection("resets").doc(token).get();const rec=d.exists?d.data():null;
-    if(!rec||Date.now()>rec.exp){setMsg("Link expired.");return}
-    if(!pw1||pw1.length<6){setMsg("Password must be at least 6 characters.");return}
-    if(pw1!==pw2){setMsg("Passwords do not match.");return}
-    const users=await loadUsers();const i=users.findIndex(x=>x.email.toLowerCase()===rec.email.toLowerCase()); if(i>=0){users[i].password=pw1;await saveUsers(users); await db.collection("resets").doc(token).delete(); setMsg("Password updated. You can close this window.");}
-  };
-  return(<Modal title="Create new password" onClose={onClose} maxClass="max-w-md">
-    <div className="space-y-3">
-      <div><label className="text-sm text-slate-300">New password</label><input type="password" value={pw1} onChange={e=>setPw1(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
-      <div><label className="text-sm text-slate-300">Confirm password</label><input type="password" value={pw2} onChange={e=>setPw2(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
-      {msg&&<div className="text-sky-400 text-sm">{msg}</div>}
-      <button onClick={confirm} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500">Update</button>
     </div>
   </Modal>)
 }
@@ -709,40 +672,47 @@ function LoginView({onLogin,onSignup,initGoogle,resetStart}){
   </div>)
 }
 /* ---------- App ---------- */
-function usePersisted(email){
-  const fresh = () => ({name:"",email:email.toLowerCase()||"",accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[]});
+function usePersisted(uid){
+  const fresh = () => ({name:"",email:"",accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[]});
   const [state,setStateInternal]=useState(null);
-  useEffect(()=>{if(email)loadState(email).then(s=>setStateInternal(s||fresh())).catch(console.error)},[email]);
+  useEffect(()=>{if(uid)loadState(uid).then(s=>setStateInternal(s||fresh())).catch(console.error)},[uid]);
   const setState = (newSOrFn) => {
     const newS = typeof newSOrFn === 'function' ? newSOrFn(state) : newSOrFn;
     setStateInternal(newS);
-    if(email) saveState(email, newS).catch(console.error);
+    if(uid) saveState(uid, newS).catch(console.error);
   };
   useEffect(() => {
-    if (state && email) {
-      saveState(email, state).catch(console.error);
+    if (state && uid) {
+      saveState(uid, state).catch(console.error);
     }
-  }, [state, email]);
+  }, [state, uid]);
   return [state,setState];
 }
 function App(){
-  const [currentEmail,setCurrentEmail]=useState(getCurrent());
-  const [state,setState]=usePersisted(currentEmail);
+  const [currentUid,setCurrentUid]=useState(getCurrent());
+  const [state,setState]=usePersisted(currentUid);
   const [cfg,setCfgInternal]=useState(null);
-  useEffect(()=>{if(currentEmail)loadCfg(currentEmail).then(c=>setCfgInternal(c||{symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES})).catch(console.error)},[currentEmail]);
+  useEffect(()=>{const unsub = auth.onAuthStateChanged(user => {
+    if(user){
+      saveCurrent(user.uid);
+      setCurrentUid(user.uid);
+    }else{
+      saveCurrent("");
+      setCurrentUid("");
+    }
+  }); return unsub;},[]);
+  useEffect(()=>{if(currentUid)loadCfg(currentUid).then(c=>setCfgInternal(c||{symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES})).catch(console.error)},[currentUid]);
   const setCfg = (newC) => {
     setCfgInternal(newC);
-    if(currentEmail) saveCfg(currentEmail, newC).catch(console.error);
+    if(currentUid) saveCfg(currentUid, newC).catch(console.error);
   };
   const [page,setPage]=useState("dashboard");
   const [showTrade,setShowTrade]=useState(false); const [editItem,setEditItem]=useState(null);
   const [showAcct,setShowAcct]=useState(false);
   const [showCal,setShowCal]=useState(false); const now=new Date(); const [calView,setCalView]=useState("month"); const [calMonth,setCalMonth]=useState(now.getMonth()); const [calYear,setCalYear]=useState(now.getFullYear()); const [calSel,setCalSel]=useState(todayISO());
   const [collapsed,setCollapsed]=useState(false);
-  const [showReset,setShowReset]=useState(false); const [resetToken,setResetToken]=useState("");
-  const [errorMsg,setErrorMsg]=useState(null);
-  useEffect(()=>{const hash=new URLSearchParams(location.hash.slice(1));const tok=hash.get("reset"); if(tok){setResetToken(tok)}},[]);
-  useEffect(()=>{if(state&&(!state.name||!state.depositDate)) setShowAcct(true)},[state?.email]);
+  const [showReset,setShowReset]=useState(false); const [errorMsg,setErrorMsg]=useState(null);
+  useEffect(()=>{if(state&&(!state.name||!state.depositDate)) setShowAcct(true)},[state]);
   useEffect(()=>{if(typeof emailjs !== 'undefined'){emailjs.init({publicKey: "qQucnU6BE7h1zb5Ex"});}},[]);
   const onExport=()=>{const csv=toCSV(state.trades,state.accType);const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="Nitty_Gritty_Template_Export.csv";a.click();URL.revokeObjectURL(url)};
   /* ---- Import (robust): ALWAYS SheetJS, tolerant header mapping ---- */
@@ -798,7 +768,11 @@ function App(){
         if (!ws) throw new Error("No sheet found in workbook");
         const rows = XLSX.utils.sheet_to_json(ws, { defval:'', raw:true, blankrows:false });
         const trades = rowsToTrades(rows);
-        setState(s => ({ ...s, trades: [...trades.reverse(), ...s.trades] })); // keep existing order as before
+        setState(s => {
+          const currentS = s || fresh();
+          const currentTrades = currentS.trades || [];
+          return { ...currentS, trades: [...trades.reverse(), ...currentTrades] };
+        });
       }catch(err){
         console.error('Import error:', err);
         setErrorMsg('Unable to import this file: ' + err.message + '. Please check the format.');
@@ -806,30 +780,21 @@ function App(){
     });
     __importEl.__ngBound = true;
   }
-  const onLogout=()=>{saveCurrent("");setCurrentEmail("")};
-  const initGoogle=(container,onEmail)=>{
+  const onLogout=()=>{auth.signOut().then(()=>{saveCurrent("");setCurrentUid("")}).catch(console.error)};
+  const initGoogle=(container,onUid)=>{
     const clientId=window.GOOGLE_CLIENT_ID;
     if(!window.google||!clientId||!container) return;
-    window.google.accounts.id.initialize({client_id:clientId,callback:(resp)=>{const p=parseJwt(resp.credential); if(p&&p.email){onEmail(p.email.toLowerCase())}}});
+    window.google.accounts.id.initialize({client_id:clientId,callback:(resp)=>{const p=parseJwt(resp.credential); if(p&&p.email){onUid(p.email.toLowerCase())}}});
     window.google.accounts.id.renderButton(container,{theme:"outline",size:"large",text:"signin_with",shape:"pill"});
   };
-  const login=async (email,password,setErr)=>{email = email.toLowerCase();const users=await loadUsers();const u=users.find(x=>x.email.toLowerCase()===email);
-    if(!u){ if(password==="__google__"){const nu=[...users,{name:email.split("@")[0],email:email,password:""}]; await saveUsers(nu); const fresh={name:email.split("@")[0],email:email,accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[]}; await saveState(email,fresh); saveCurrent(email); setCurrentEmail(email); setCfg({symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES}); return;}
-      setErr("No such user. Please sign up."); return;}
-    if(password!=="__google__" && u.password!==password){setErr("Wrong password.");return}
-    setErr(""); saveCurrent(u.email); setCurrentEmail(u.email); setCfg(await loadCfg(u.email)||{symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES});
-  };
-  const signup=async (name,email,password,setErr)=>{email = email.toLowerCase();const users=await loadUsers();if(users.some(x=>x.email.toLowerCase()===email)){setErr("Email already registered.");return}
-    const u={name,email,password}; const nu=[...users,u]; await saveUsers(nu);
-    const fresh={name,email,accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[]}; await saveState(email,fresh); saveCurrent(email); setCurrentEmail(email);
-    setCfg({symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES});
-  };
+  const login=async (userEmail,password,setErr)=>{try{const cred = await auth.signInWithEmailAndPassword(userEmail, password); saveCurrent(cred.user.uid); setCurrentUid(cred.user.uid);}catch(err){setErr(err.message)}};
+  const signup=async (userName,userEmail,password,setErr)=>{try{const cred = await auth.createUserWithEmailAndPassword(userEmail, password); const uid = cred.user.uid; const fresh={name:userName,email:userEmail,accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[]}; await saveState(uid,fresh); await saveCfg(uid,{symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES}); saveCurrent(uid); setCurrentUid(uid);}catch(err){setErr(err.message)}};
+  const googleLogin=async (userEmail,setErr)=>{try{const provider = new firebase.auth.GoogleAuthProvider(); const cred = await auth.signInWithPopup(provider); const uid = cred.user.uid; const userName = cred.user.displayName || userEmail.split("@")[0]; loadState(uid).then(s=>{if(!s){const fresh={name:userName,email:userEmail,accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[]}; saveState(uid,fresh);}}); loadCfg(uid).then(c=>{if(!c){saveCfg(uid,{symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES});}}); saveCurrent(uid); setCurrentUid(uid);}catch(err){setErr(err.message)}};
   const resetStart=()=>{setShowReset(true)};
   const addOrUpdate=(draft)=>{const id=draft.id||Math.random().toString(36).slice(2); const arr=state.trades.slice(); const idx=arr.findIndex(t=>t.id===id); const rec={...draft,id}; if(idx>=0)arr[idx]=rec; else arr.unshift(rec); setState({...state,trades:arr}); setShowTrade(false); setEditItem(null)};
   const delTrade=(id)=>setState({...state,trades:state.trades.filter(t=>t.id!==id)});
   const clearAllTrades=()=>setState({...state,trades:[]});
-  if(resetToken){return <NewPasswordModal token={resetToken} onClose={()=>{setResetToken(""); location.hash=""}}/>}
-  if(!currentEmail){return <><LoginView onLogin={login} onSignup={signup} initGoogle={initGoogle} resetStart={resetStart}/>{showReset&&<ResetModal email="" onClose={()=>setShowReset(false)}/>}</>}
+  if(!currentUid){return <><LoginView onLogin={(em,pw,setErr)=>login(em,pw,setErr)} onSignup={(nm,em,pw,setErr)=>signup(nm,em,pw,setErr)} initGoogle={initGoogle} resetStart={resetStart} onGoogleLogin={(em,setErr)=>googleLogin(em,setErr)}/>{showReset&&<ResetModal email="" onClose={()=>setShowReset(false)}/>}</>}
   if (!state || !cfg) return <div className="min-h-screen bg-[#0a1d4d] flex items-center justify-center"><img src={LOGO_PUBLIC} onError={e=>{e.currentTarget.src=LOGO_FALLBACK}} className="loading-logo h-32 w-32" alt="Loading" /></div>;
   const openTrades=state.trades.filter(t=> !t.exitType || t.exitType === "Trade In Progress").length;
   const realized=state.trades.filter(t=>new Date(t.date)>=new Date(state.depositDate)&&t.exitType && t.exitType !== "Trade In Progress").map(t=>computeDollarPnL(t,state.accType)).filter(v=>v!==null&&isFinite(v)).reduce((a,b)=>a+b,0);
@@ -866,11 +831,10 @@ function App(){
         accType={state.accType} setAccType={v=>setState({...state,accType:v})}
         capital={state.capital} setCapital={v=>setState({...state,capital:v||0})}
         depositDate={state.depositDate} setDepositDate={v=>setState({...state,depositDate:v})}
-        email={state.email}
         cfg={cfg} setCfg={(n)=>{setCfg(n)}}
       />)}
       {showTrade&&(<TradeModal initial={editItem} onClose={()=>{setShowTrade(false);setEditItem(null)}} onSave={addOrUpdate} onDelete={delTrade} accType={state.accType} symbols={cfg.symbols} strategies={cfg.strategies}/>)}
-      {showAcct&&(<AccountSetupModal name={state.name} setName={v=>setState({...state,name:v})} accType={state.accType} setAccType={v=>setState({...state,accType:v})} capital={state.capital} setCapital={v=>setState({...state,capital:v||0})} depositDate={state.depositDate} setDepositDate={v=>setState({...state,depositDate:v})} onClose={()=>{setShowAcct(false); saveState(currentEmail, state);}} email={state.email}/>)}
+      {showAcct&&(<AccountSetupModal name={state.name} setName={v=>setState({...state,name:v})} accType={state.accType} setAccType={v=>setState({...state,accType:v})} capital={state.capital} setCapital={v=>setState({...state,capital:v||0})} depositDate={state.depositDate} setDepositDate={v=>setState({...state,depositDate:v})} onClose={()=>{setShowAcct(false); saveState(currentUid, state);}}/>)}
       {showCal&&(<CalendarModal onClose={()=>setShowCal(false)} trades={state.trades} view={calView} setView={setCalView} month={calMonth} setMonth={setCalMonth} year={calYear} setYear={setCalYear} selectedDate={calSel} setSelectedDate={setCalSel} accType={state.accType}/>)}
       {showReset&&<ResetModal email="" onClose={()=>setShowReset(false)}/>}
       {errorMsg&&<Modal title="Error" onClose={()=>setErrorMsg(null)} maxClass="max-w-md">
