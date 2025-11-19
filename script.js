@@ -626,12 +626,12 @@ function ResetModal({email,onClose}){
     </div>
   </Modal>)
 }
-function LoginView({onLogin,onSignup,initGoogle,resetStart}){
+function LoginView({onLogin,onSignup,initGoogle,resetStart,onGoogleLogin}){
   const [mode,setMode]=useState("login");
   const [email,setEmail]=useState(""); const [password,setPassword]=useState(""); const [showPw,setShowPw]=useState(false);
   const [name,setName]=useState(""); const [confirm,setConfirm]=useState(""); const [err,setErr]=useState("");
   const googleDiv=useRef(null);
-  useEffect(()=>{initGoogle(googleDiv.current,(payloadEmail)=>{setErr(""); onLogin(payloadEmail.toLowerCase(),"__google__",setErr)})},[]);
+  useEffect(()=>{initGoogle(googleDiv.current,(payloadEmail)=>{setErr(""); onGoogleLogin(payloadEmail,setErr)})},[]);
   const submit=async ()=>{setErr(""); if(mode==="login"){if(!email||!password)return setErr("Fill all fields."); await onLogin(email.toLowerCase(),password,setErr)}
     else{if(!name||!email||!password||!confirm)return setErr("Fill all fields."); if(password!==confirm)return setErr("Passwords do not match."); await onSignup(name,email.toLowerCase(),password,setErr)}};
   return(<div className="min-h-screen bg-[#0a1d4d] grid md:grid-cols-2">
@@ -696,11 +696,13 @@ function App(){
     if(user){
       saveCurrent(user.uid);
       setCurrentUid(user.uid);
+      const updatedState = {...state, email: user.email, name: user.displayName || state.name};
+      if (updatedState !== state) setState(updatedState);
     }else{
       saveCurrent("");
       setCurrentUid("");
     }
-  }); return unsub;},[]);
+  }); return unsub;},[state]);
   useEffect(()=>{if(currentUid)loadCfg(currentUid).then(c=>setCfgInternal(c||{symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES})).catch(console.error)},[currentUid]);
   const setCfg = (newC) => {
     setCfgInternal(newC);
@@ -727,10 +729,11 @@ function App(){
   function openImportDialog(){ __importEl.value = ''; __importEl.click(); }
   function rowsToTrades(rows){
     const out = [];
-    for(const r of rows){
+    for(const r of rows || []){
+      if(!r) continue;
       // Build one normalized dictionary per row
       const norm = {};
-      for(const k of Object.keys(r||{})){
+      for(const k of Object.keys(r)){
         norm[normalizeKey(k)] = r[k];
       }
       // Map values using aliases
@@ -768,11 +771,7 @@ function App(){
         if (!ws) throw new Error("No sheet found in workbook");
         const rows = XLSX.utils.sheet_to_json(ws, { defval:'', raw:true, blankrows:false });
         const trades = rowsToTrades(rows);
-        setState(s => {
-          const currentS = s || fresh();
-          const currentTrades = currentS.trades || [];
-          return { ...currentS, trades: [...trades.reverse(), ...currentTrades] };
-        });
+        setState(s => ({ ...s, trades: [...trades.reverse(), ...s.trades] })); // keep existing order as before
       }catch(err){
         console.error('Import error:', err);
         setErrorMsg('Unable to import this file: ' + err.message + '. Please check the format.');
