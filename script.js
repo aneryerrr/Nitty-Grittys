@@ -155,8 +155,10 @@ function AccountSetupModal({name,setName,accType,setAccType,capital,setCapital,d
     const users=await loadUsers(); const i=users.findIndex(u=>u.email.toLowerCase()===(email||"").toLowerCase());
     if(i>=0){users[i].password=pw1; await saveUsers(users); setMsg("Password updated."); setPw1(""); setPw2("")}
   };
+  const firstName = name.split(' ')[0] || 'User';
+  const title = `Welcome, ${firstName}! Please set up your account`;
   return(
-    <Modal title="Account Setup" onClose={onClose} maxClass="max-w-2xl">
+    <Modal title={title} onClose={onClose} maxClass="max-w-2xl">
       <div className="flex gap-2 mb-4">
         <button onClick={()=>setTab("personal")} className={`px-3 py-1.5 rounded-lg border ${tab==="personal"?"bg-slate-700 border-slate-600":"border-slate-700"}`}>Personal Info</button>
         <button onClick={()=>setTab("security")} className={`px-3 py-1.5 rounded-lg border ${tab==="security"?"bg-slate-700 border-slate-600":"border-slate-700"}`}>Privacy & Security</button>
@@ -709,11 +711,9 @@ function usePersisted(email){
   const [state,setStateInternal]=useState(null);
   useEffect(()=>{if(email)loadState(email).then(s=>setStateInternal(s||fresh())).catch(console.error)},[email]);
   const setState = (newSOrFn) => {
-    setStateInternal(prev => {
-      const newS = typeof newSOrFn === 'function' ? newSOrFn(prev) : newSOrFn;
-      if(email) saveState(email, newS).catch(console.error);
-      return newS;
-    });
+    const newS = typeof newSOrFn === 'function' ? newSOrFn(state) : newSOrFn;
+    setStateInternal(newS);
+    if(email) saveState(email, newS).catch(console.error);
   };
   return [state,setState];
 }
@@ -789,6 +789,7 @@ function App(){
   if (!__importEl.__ngBound){
     __importEl.addEventListener('change', async (e)=>{
       const f = e.target.files?.[0]; if(!f) return;
+      if(!f.name.match(/\.(csv|xls|xlsx)$/i)) {setErrorMsg("Invalid file type. Only .csv, .xls, .xlsx supported."); return;}
       try{
         const buf = await f.arrayBuffer();
         const wb = XLSX.read(buf, { type:'array' });
@@ -867,11 +868,11 @@ function App(){
         cfg={cfg} setCfg={(n)=>{setCfg(n)}}
       />)}
       {showTrade&&(<TradeModal initial={editItem} onClose={()=>{setShowTrade(false);setEditItem(null)}} onSave={addOrUpdate} onDelete={delTrade} accType={state.accType} symbols={cfg.symbols} strategies={cfg.strategies}/>)}
-      {showAcct&&(<AccountSetupModal name={state.name} setName={v=>setState({...state,name:v})} accType={state.accType} setAccType={v=>setState({...state,accType:v})} capital={state.capital} setCapital={v=>setState({...state,capital:v||0})} depositDate={state.depositDate} setDepositDate={v=>setState({...state,depositDate:v})} onClose={()=>setShowAcct(false)} email={state.email}/>)}
+      {showAcct&&(<AccountSetupModal name={state.name} setName={v=>setState({...state,name:v})} accType={state.accType} setAccType={v=>setState({...state,accType:v})} capital={state.capital} setCapital={v=>setState({...state,capital:v||0})} depositDate={state.depositDate} setDepositDate={v=>setState({...state,depositDate:v})} onClose={()=>{setShowAcct(false); saveState(currentEmail, state);}} email={state.email}/>)}
       {showCal&&(<CalendarModal onClose={()=>setShowCal(false)} trades={state.trades} view={calView} setView={setCalView} month={calMonth} setMonth={setCalMonth} year={calYear} setYear={setCalYear} selectedDate={calSel} setSelectedDate={setCalSel} accType={state.accType}/>)}
       {showReset&&<ResetModal email="" onClose={()=>setShowReset(false)}/>}
       {errorMsg&&<Modal title="Error" onClose={()=>setErrorMsg(null)} maxClass="max-w-md">
-        <div className="bg-[#0a1d4d] p-4 rounded-xl text-slate-100">{errorMsg}</div>
+        <div>{errorMsg}</div>
       </Modal>}
     </AppShell>
   )
