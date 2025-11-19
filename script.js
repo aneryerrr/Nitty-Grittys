@@ -487,7 +487,7 @@ function Histories({trades,accType,onEdit,onDelete,strategies,onClearAll}){
 }
 /* ---------- Notes (uniform preview width; everything else unchanged) ---------- */
 function NotesPanel({trades}){
-  const [items,setItems]=useState([]); 
+  const [items,setItems]=useState([]);
   useEffect(()=>{loadNotes().then(setItems).catch(console.error)},[]);
   const loadNotes=async ()=>{const email=getCurrent().toLowerCase();if(!email)return[];const d=await db.collection("userStates").doc(email).get();return d.exists?(d.data().notes||[]):[]};
   const [show,setShow]=useState(false);
@@ -726,16 +726,6 @@ function App(){
     setCfgInternal(newC);
     if(currentEmail) saveCfg(currentEmail, newC).catch(console.error);
   };
-  useEffect(() => {
-    if (state && currentEmail) {
-      saveState(currentEmail, state);
-    }
-  }, [state, currentEmail]);
-  useEffect(() => {
-    if (cfg && currentEmail) {
-      saveCfg(currentEmail, cfg);
-    }
-  }, [cfg, currentEmail]);
   const [page,setPage]=useState("dashboard");
   const [showTrade,setShowTrade]=useState(false); const [editItem,setEditItem]=useState(null);
   const [showAcct,setShowAcct]=useState(false);
@@ -792,14 +782,14 @@ function App(){
       if(!f.name.match(/\.(csv|xls|xlsx)$/i)) {setErrorMsg("Invalid file type. Only .csv, .xls, .xlsx supported."); return;}
       try{
         const buf = await f.arrayBuffer();
-        const wb = XLSX.read(buf, { type:'array' });
+        const wb = XLSX.read(buf, { type:'array', cellDates: true });
         const ws = wb.Sheets[wb.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(ws, { defval:'', raw:true, blankrows:false });
         const trades = rowsToTrades(rows);
         setState(s => ({ ...s, trades: [...trades.reverse(), ...s.trades] })); // keep existing order as before
       }catch(err){
         console.error('Import error:', err);
-        setErrorMsg('Unable to import this file. Please check the format.');
+        setErrorMsg('Unable to import this file: ' + err.message + '. Please check the format.');
       }
     });
     __importEl.__ngBound = true;
@@ -879,3 +869,41 @@ function App(){
 }
 /* -------- Mount -------- */
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+
+/* ---- Import helpers ---- */
+const normalizeKey = k => (k||'').toLowerCase().trim().replace(/[_ ]/g,'');
+const getFirst = (o, aliases) => {
+  for(const a of aliases){
+    if(o.hasOwnProperty(a)) return o[a];
+  }
+  return null;
+};
+const toNumberMaybe = v => {
+  if(typeof v === 'number') return v;
+  if(typeof v !== 'string') return undefined;
+  const clean = v.trim().replace(/[^0-9.eE+-]/g,'');
+  const n = parseFloat(clean);
+  return isFinite(n) ? n : undefined;
+};
+const coerceISODate = v => {
+  if(!v) return todayISO();
+  if(typeof v === 'string' && v.match(/^\d{4}-\d{2}-\d{2}$/)) return v;
+  if(typeof v === 'number'){ // Excel serial
+    const d = new Date(Math.round((v - 25569)*86400*1000));
+    return d.toISOString().slice(0,10);
+  }
+  return todayISO();
+};
+const FIELD_ALIASES = {
+  date: ['date', 'trade date', 'entry date', 'exit date'],
+  symbol: ['symbol', 'pair', 'instrument', 'asset'],
+  side: ['side', 'direction', 'type', 'action', 'buy/sell'],
+  lotsize: ['lotsize', 'lot size', 'size', 'volume', 'quantity'],
+  entry: ['entry', 'entry price', 'open price'],
+  exit: ['exit', 'exit price', 'close price'],
+  tp1: ['tp1', 'take profit 1', 'tp', 'target 1'],
+  tp2: ['tp2', 'take profit 2', 'target 2'],
+  sl: ['sl', 'stop loss', 'stop'],
+  strategy: ['strategy', 'setup', 'reason'],
+  exittype: ['exittype', 'exit type', 'close type', 'outcome']
+};
