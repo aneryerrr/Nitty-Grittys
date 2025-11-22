@@ -474,7 +474,7 @@ function NotesPanel({trades, currentUser}){
   const [draft,setDraft]=useState(null);
   useEffect(()=>{
     if(!currentUser) return;
-    const docRef = doc(db, `users/${currentUser.uid}/data`);
+    const docRef = doc(db, `users/${currentUser.uid}`);
     const unsubscribe = onSnapshot(docRef, (snap) => {
       setItems(snap.data()?.notes || []);
     });
@@ -484,7 +484,7 @@ function NotesPanel({trades, currentUser}){
     let arr=[...items]; if(rec.id){const i=arr.findIndex(x=>x.id===rec.id);if(i>=0)arr[i]=rec}else{arr.unshift({...rec,id:Math.random().toString(36).slice(2)})} 
     setItems(arr); 
     if(currentUser) {
-      const docRef = doc(db, `users/${currentUser.uid}/data`);
+      const docRef = doc(db, `users/${currentUser.uid}`);
       await updateDoc(docRef, {notes:arr});
     }
     setShow(false);
@@ -492,7 +492,7 @@ function NotesPanel({trades, currentUser}){
   const delNote=async(id)=>{
     const arr=items.filter(x=>x.id!==id); setItems(arr); 
     if(currentUser) {
-      const docRef = doc(db, `users/${currentUser.uid}/data`);
+      const docRef = doc(db, `users/${currentUser.uid}`);
       await updateDoc(docRef, {notes:arr});
     }
   };
@@ -632,15 +632,23 @@ function ResetModal({email,onClose}){
     </div>
   </Modal>)
 }
+function parseJwt(token){try{return JSON.parse(atob(token.split('.')[1]))}catch{return null}}
 function LoginView({resetStart}){
   const [mode,setMode]=useState("login");
   const [email,setEmail]=useState(""); const [password,setPassword]=useState(""); const [showPw,setShowPw]=useState(false);
   const [name,setName]=useState(""); const [confirm,setConfirm]=useState(""); const [err,setErr]=useState("");
+  const googleDiv=useRef(null);
+  useEffect(()=>{initGoogle(googleDiv.current,(resp)=>{const p=parseJwt(resp.credential);if(p&&p.email){const credential=GoogleAuthProvider.credential(resp.credential);signInWithCredential(auth,credential).catch(e=>setErr(e.message));}})},[]);
   const submit=async()=>{setErr(""); if(mode==="login"){if(!email||!password)return setErr("Fill all fields.");
     try{await signInWithEmailAndPassword(auth, email,password)}catch(error){if(error.code==='auth/user-not-found'){try{await createUserWithEmailAndPassword(auth, email,password)}catch(e){setErr(e.message);return}}else{setErr(error.message);return}}}
     else{if(!name||!email||!password||!confirm)return setErr("Fill all fields."); if(password!==confirm)return setErr("Passwords do not match.");
       try{const cred=await createUserWithEmailAndPassword(auth, email,password); await updateProfile(cred.user, {displayName:name});}catch(e){setErr(e.message)}}};
-  const googleLogin=async()=>{const provider=new GoogleAuthProvider(); try{await signInWithPopup(auth, provider);}catch(e){setErr(e.message)}};
+  const initGoogle=(container,onCredential)=>{
+    const clientId=window.GOOGLE_CLIENT_ID;
+    if(!window.google||!clientId||!container) return;
+    window.google.accounts.id.initialize({client_id:clientId,callback:(resp)=>onCredential(resp)});
+    window.google.accounts.id.renderButton(container,{theme:"outline",size:"large",text:"signin_with",shape:"pill"});
+  };
   return(<div className="min-h-screen grid md:grid-cols-2">
     {/* Left panel – now solid deep blue (no image); color via CSS class `.hero` */}
     <div className="hidden md:flex hero items-center justify-center">
@@ -671,7 +679,7 @@ function LoginView({resetStart}){
         {mode==="signup"&&(<div className="mb-4"><label className="text-sm text-slate-300">Confirm Password</label><input type={showPw?"text":"password"} value={confirm} onChange={e=>setConfirm(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>)}
         {err&&<div className="text-red-400 text-sm mb-3">{err}</div>}
         <div className="flex items-center justify-between">
-          <button onClick={googleLogin} className="px-4 py-2 rounded-lg border border-slate-700 hover:bg-slate-700">Sign in with Google</button>
+          <div id="googleDiv" ref={googleDiv}></div>
           <button onClick={submit} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500">Continue</button>
         </div>
       </div>
@@ -691,6 +699,7 @@ const onAuthStateChanged = window.onAuthStateChanged;
 const sendPasswordResetEmail = window.sendPasswordResetEmail;
 const updatePassword = window.updatePassword;
 const updateProfile = window.updateProfile;
+const signInWithCredential = window.signInWithCredential;
 const doc = window.doc;
 const getDoc = window.getDoc;
 const setDoc = window.setDoc;
@@ -701,7 +710,7 @@ function usePersisted(currentUser){
   const [state,setState]=useState(fresh());
   useEffect(()=>{
     if(!currentUser) return;
-    const docRef = doc(db, `users/${currentUser.uid}/data`);
+    const docRef = doc(db, `users/${currentUser.uid}`);
     const unsubscribe = onSnapshot(docRef, (snap)=>{
       let s = snap.data()?.state || fresh(currentUser.email);
       s.name = currentUser.displayName || s.name;
@@ -711,7 +720,7 @@ function usePersisted(currentUser){
   },[currentUser]);
   useEffect(()=>{
     if(!currentUser) return;
-    const docRef = doc(db, `users/${currentUser.uid}/data`);
+    const docRef = doc(db, `users/${currentUser.uid}`);
     updateDoc(docRef, {state}).catch(e=>console.error("Update state error:",e));
   },[state,currentUser]);
   return [state,setState];
@@ -720,7 +729,7 @@ function useCfg(currentUser){
   const [cfg,setCfg]=useState({symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES});
   useEffect(()=>{
     if(!currentUser) return;
-    const docRef = doc(db, `users/${currentUser.uid}/data`);
+    const docRef = doc(db, `users/${currentUser.uid}`);
     const unsubscribe = onSnapshot(docRef, (snap)=>{
       setCfg(snap.data()?.cfg || {symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES});
     });
@@ -728,7 +737,7 @@ function useCfg(currentUser){
   },[currentUser]);
   useEffect(()=>{
     if(!currentUser) return;
-    const docRef = doc(db, `users/${currentUser.uid}/data`);
+    const docRef = doc(db, `users/${currentUser.uid}`);
     updateDoc(docRef, {cfg}).catch(e=>console.error("Update cfg error:",e));
   },[cfg,currentUser]);
   return [cfg,setCfg];
@@ -749,7 +758,7 @@ function App(){
       setCurrentUser(user);
       if(user){
         const uid=user.uid;
-        const docRef=doc(db, `users/${uid}/data`);
+        const docRef=doc(db, `users/${uid}`);
         const snap=await getDoc(docRef);
         if(!snap.exists()){
           // Migrate legacy local data if exists
