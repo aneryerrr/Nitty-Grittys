@@ -44,6 +44,7 @@ const CFG_KEY =(email)=>"ng_cfg_"+email;
 const loadUsers=()=>{try{return JSON.parse(localStorage.getItem(USERS_KEY)||"[]")}catch{return[]}};
 const loadState=(e)=>{try{return JSON.parse(localStorage.getItem("ng_state_"+e)||"null")}catch{return null}};
 const loadCfg=(e)=>{try{return JSON.parse(localStorage.getItem(CFG_KEY(e))||"null")}catch{return null}};
+const getCurrent=()=>{try{return localStorage.getItem(CURR_KEY)||""}catch{return""}};
 /* Tick/pip → $ approximation (unchanged) */
 function perLotValueForMove(symbol,delta,accType){
   const abs=Math.abs(delta);const isStd=accType==="Dollar Account";const mult=std=>isStd?std:std/100;
@@ -137,7 +138,7 @@ function AccountSetupModal({name,setName,accType,setAccType,capital,setCapital,d
   const [pw1,setPw1]=useState(""); const [pw2,setPw2]=useState(""); const [msg,setMsg]=useState("");
   const savePw=()=>{ if(!pw1||pw1.length<6){setMsg("Password must be at least 6 characters.");return}
     if(pw1!==pw2){setMsg("Passwords do not match.");return}
-    auth.currentUser.updatePassword(pw1).then(()=>setMsg("Password updated.")).catch(e=>setMsg(e.message)); setPw1(""); setPw2("");
+    updatePassword(auth.currentUser, pw1).then(()=>setMsg("Password updated.")).catch(e=>setMsg(e.message)); setPw1(""); setPw2("");
   };
   return(
     <Modal title="Account Setup" onClose={onClose} maxClass="max-w-2xl">
@@ -172,7 +173,7 @@ function SettingsPanel({name,setName,accType,setAccType,capital,setCapital,depos
   const [pw1,setPw1]=useState(""); const [pw2,setPw2]=useState(""); const [msg,setMsg]=useState("");
   const savePw=()=>{ if(!pw1||pw1.length<6){setMsg("Password must be at least 6 characters.");return}
     if(pw1!==pw2){setMsg("Passwords do not match.");return}
-    auth.currentUser.updatePassword(pw1).then(()=>setMsg("Password updated.")).catch(e=>setMsg(e.message)); setPw1(""); setPw2("");
+    updatePassword(auth.currentUser, pw1).then(()=>setMsg("Password updated.")).catch(e=>setMsg(e.message)); setPw1(""); setPw2("");
   };
   const [symText,setSymText]=useState("");
   const [stratText,setStratText]=useState(""); const [stratColor,setStratColor]=useState("default");
@@ -473,21 +474,27 @@ function NotesPanel({trades, currentUser}){
   const [draft,setDraft]=useState(null);
   useEffect(()=>{
     if(!currentUser) return;
-    const load=async()=>{
-      const doc=await db.doc(`users/${currentUser.uid}/data`).get();
-      setItems(doc.data()?.notes || []);
-    };
-    load();
+    const docRef = doc(db, `users/${currentUser.uid}/data`);
+    const unsubscribe = onSnapshot(docRef, (snap) => {
+      setItems(snap.data()?.notes || []);
+    });
+    return unsubscribe;
   },[currentUser]);
   const saveNote=async(rec)=>{
     let arr=[...items]; if(rec.id){const i=arr.findIndex(x=>x.id===rec.id);if(i>=0)arr[i]=rec}else{arr.unshift({...rec,id:Math.random().toString(36).slice(2)})} 
     setItems(arr); 
-    if(currentUser) await db.doc(`users/${currentUser.uid}/data`).update({notes:arr});
+    if(currentUser) {
+      const docRef = doc(db, `users/${currentUser.uid}/data`);
+      await updateDoc(docRef, {notes:arr});
+    }
     setShow(false);
   };
   const delNote=async(id)=>{
     const arr=items.filter(x=>x.id!==id); setItems(arr); 
-    if(currentUser) await db.doc(`users/${currentUser.uid}/data`).update({notes:arr});
+    if(currentUser) {
+      const docRef = doc(db, `users/${currentUser.uid}/data`);
+      await updateDoc(docRef, {notes:arr});
+    }
   };
   return(
     <div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4">
@@ -616,7 +623,7 @@ function AppShell({children,capitalPanel,nav,logoSrc,onToggleSidebar,onExport,on
 /* ---------- Login & Forgot Password (unchanged behavior) ---------- */
 function ResetModal({email,onClose}){
   const [e,setE]=useState(email||""); const [msg,setMsg]=useState("");
-  const start=()=>{auth.sendPasswordResetEmail(e).then(()=>setMsg("Reset email sent. Check your inbox (or spam).")).catch(error=>setMsg("Failed to send: " + error.message));}
+  const start=()=>{sendPasswordResetEmail(auth, e).then(()=>setMsg("Reset email sent. Check your inbox (or spam).")).catch(error=>setMsg("Failed to send: " + error.message));}
   return(<Modal title="Password reset" onClose={onClose} maxClass="max-w-md">
     <div className="space-y-3">
       <div><label className="text-sm text-slate-300">Your email</label><input value={e} onChange={ev=>setE(ev.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
@@ -630,10 +637,10 @@ function LoginView({resetStart}){
   const [email,setEmail]=useState(""); const [password,setPassword]=useState(""); const [showPw,setShowPw]=useState(false);
   const [name,setName]=useState(""); const [confirm,setConfirm]=useState(""); const [err,setErr]=useState("");
   const submit=async()=>{setErr(""); if(mode==="login"){if(!email||!password)return setErr("Fill all fields.");
-    try{await auth.signInWithEmailAndPassword(email,password)}catch(error){if(error.code==='auth/user-not-found'){try{await auth.createUserWithEmailAndPassword(email,password)}catch(e){setErr(e.message);return}}else{setErr(error.message);return}}}
+    try{await signInWithEmailAndPassword(auth, email,password)}catch(error){if(error.code==='auth/user-not-found'){try{await createUserWithEmailAndPassword(auth, email,password)}catch(e){setErr(e.message);return}}else{setErr(error.message);return}}}
     else{if(!name||!email||!password||!confirm)return setErr("Fill all fields."); if(password!==confirm)return setErr("Passwords do not match.");
-      try{const cred=await auth.createUserWithEmailAndPassword(email,password); await cred.user.updateProfile({displayName:name});}catch(e){setErr(e.message)}}};
-  const googleLogin=async()=>{const provider=new firebase.auth.GoogleAuthProvider(); try{await auth.signInWithPopup(provider);}catch(e){setErr(e.message)}};
+      try{const cred=await createUserWithEmailAndPassword(auth, email,password); await updateProfile(cred.user, {displayName:name});}catch(e){setErr(e.message)}}};
+  const googleLogin=async()=>{const provider=new GoogleAuthProvider(); try{await signInWithPopup(auth, provider);}catch(e){setErr(e.message)}};
   return(<div className="min-h-screen grid md:grid-cols-2">
     {/* Left panel – now solid deep blue (no image); color via CSS class `.hero` */}
     <div className="hidden md:flex hero items-center justify-center">
@@ -672,26 +679,14 @@ function LoginView({resetStart}){
   </div>)
 }
 /* ---------- App ---------- */
-// Initialize Firebase (paste your config here from Firebase console)
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY_HERE",
-  authDomain: "nitty-gritty.firebaseapp.com",
-  projectId: "nitty-gritty",
-  storageBucket: "nitty-gritty.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID_HERE",
-  appId: "YOUR_APP_ID_HERE"
-};
-const firebaseApp = firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth(firebaseApp);
-const db = firebase.firestore(firebaseApp);
 function usePersisted(currentUser){
   const fresh = (email) => ({name:"",email:email||"",accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[]});
   const [state,setState]=useState(fresh());
   useEffect(()=>{
     if(!currentUser) return;
-    const docRef = db.doc(`users/${currentUser.uid}/data`);
-    const unsubscribe = docRef.onSnapshot(doc=>{
-      let s = doc.data()?.state || fresh(currentUser.email);
+    const docRef = doc(db, `users/${currentUser.uid}/data`);
+    const unsubscribe = onSnapshot(docRef, (snap)=>{
+      let s = snap.data()?.state || fresh(currentUser.email);
       s.name = currentUser.displayName || s.name;
       setState(s);
     });
@@ -699,7 +694,8 @@ function usePersisted(currentUser){
   },[currentUser]);
   useEffect(()=>{
     if(!currentUser) return;
-    db.doc(`users/${currentUser.uid}/data`).update({state}).catch(e=>console.error("Update state error:",e));
+    const docRef = doc(db, `users/${currentUser.uid}/data`);
+    updateDoc(docRef, {state}).catch(e=>console.error("Update state error:",e));
   },[state,currentUser]);
   return [state,setState];
 }
@@ -707,15 +703,16 @@ function useCfg(currentUser){
   const [cfg,setCfg]=useState({symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES});
   useEffect(()=>{
     if(!currentUser) return;
-    const docRef = db.doc(`users/${currentUser.uid}/data`);
-    const unsubscribe = docRef.onSnapshot(doc=>{
-      setCfg(doc.data()?.cfg || {symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES});
+    const docRef = doc(db, `users/${currentUser.uid}/data`);
+    const unsubscribe = onSnapshot(docRef, (snap)=>{
+      setCfg(snap.data()?.cfg || {symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES});
     });
     return unsubscribe;
   },[currentUser]);
   useEffect(()=>{
     if(!currentUser) return;
-    db.doc(`users/${currentUser.uid}/data`).update({cfg}).catch(e=>console.error("Update cfg error:",e));
+    const docRef = doc(db, `users/${currentUser.uid}/data`);
+    updateDoc(docRef, {cfg}).catch(e=>console.error("Update cfg error:",e));
   },[cfg,currentUser]);
   return [cfg,setCfg];
 }
@@ -731,19 +728,19 @@ function App(){
   const [collapsed,setCollapsed]=useState(false);
   const [showReset,setShowReset]=useState(false);
   useEffect(()=>{
-    const unsubscribe=auth.onAuthStateChanged(async(user)=>{
+    const unsubscribe=onAuthStateChanged(auth, async(user)=>{
       setCurrentUser(user);
       if(user){
         const uid=user.uid;
-        const docRef=db.doc(`users/${uid}/data`);
-        const doc=await docRef.get();
-        if(!doc.exists){
+        const docRef=doc(db, `users/${uid}/data`);
+        const snap=await getDoc(docRef);
+        if(!snap.exists()){
           // Migrate legacy local data if exists
           const legacyEmail = getCurrent() || user.email;
           const localS=loadState(legacyEmail);
           if(localS){
             console.log("Migrating historic data to Firebase...");
-            await docRef.set({
+            await setDoc(docRef, {
               state: localS,
               cfg: loadCfg(legacyEmail) || {symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES},
               notes: JSON.parse(localStorage.getItem("ng_notes")||"[]")
@@ -752,7 +749,7 @@ function App(){
             localStorage.clear();
           } else {
             // New user, set defaults
-            await docRef.set({
+            await setDoc(docRef, {
               state: fresh(user.email),
               cfg: {symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES},
               notes: []
@@ -822,7 +819,7 @@ function App(){
     });
     __importEl.__ngBound = true;
   }
-  const onLogout=()=>{auth.signOut()};
+  const onLogout=()=>{signOut(auth)};
   const resetStart=()=>{setShowReset(true)};
   const addOrUpdate=(draft)=>{const id=draft.id||Math.random().toString(36).slice(2); const arr=state.trades.slice(); const idx=arr.findIndex(t=>t.id===id); const rec={...draft,id}; if(idx>=0)arr[idx]=rec; else arr.unshift(rec); setState({...state,trades:arr}); setShowTrade(false); setEditItem(null)};
   const delTrade=(id)=>setState({...state,trades:state.trades.filter(t=>t.id!==id)});
