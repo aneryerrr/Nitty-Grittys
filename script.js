@@ -209,7 +209,7 @@ function SettingsPanel({name,setName,accType,setAccType,capital,setCapital,depos
             <div className="font-semibold mb-2">Symbols</div>
             <div className="flex gap-2 mb-2">
               <input value={symText} onChange={e=>setSymText(e.target.value.toUpperCase())} placeholder="e.g., XAUUSD" className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/>
-              <button onClick={()=>{if(symText && !cfg.symbols.includes(symText)){const n={...cfg,symbols:[...cfg.symbols,symText]};setCfg(n);}}} className="px-3 py-2 rounded-lg border border-slate-700">Add</button>
+            <button onClick={()=>{if(symText && !cfg.symbols.includes(symText)){const n={...cfg,symbols:[...cfg.symbols,symText]};setCfg(n);}}} className="px-3 py-2 rounded-lg border border-slate-700">Add</button>
             </div>
             <div className="flex flex-wrap gap-2">{cfg.symbols.map(s=>(<span key={s} className="px-2 py-1 rounded-lg border border-slate-700">{s} <button onClick={()=>{const n={...cfg,symbols:cfg.symbols.filter(x=>x!==s)};setCfg(n)}} className="ml-1 text-red-300">×</button></span>))}</div>
           </div>
@@ -746,7 +746,7 @@ function App(){
   const [currentUser,setCurrentUser]=useState(null);
   const [loading,setLoading]=useState(true);
   const [state,setState]=usePersisted(currentUser);
-  const [cfg,setCfg]=useCfg(currentUser);
+  const [cfg,setCfg]=usePersisted(currentUser);
   const [page,setPage]=useState("dashboard");
   const [showTrade,setShowTrade]=useState(false); const [editItem,setEditItem]=useState(null);
   const [showAcct,setShowAcct]=useState(false);
