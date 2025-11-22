@@ -679,6 +679,23 @@ function LoginView({resetStart}){
   </div>)
 }
 /* ---------- App ---------- */
+// Define Firebase functions from window (since modular imports are in index.html)
+const auth = window.auth;
+const db = window.db;
+const GoogleAuthProvider = window.GoogleAuthProvider;
+const signInWithEmailAndPassword = window.signInWithEmailAndPassword;
+const createUserWithEmailAndPassword = window.createUserWithEmailAndPassword;
+const signInWithPopup = window.signInWithPopup;
+const signOut = window.signOut;
+const onAuthStateChanged = window.onAuthStateChanged;
+const sendPasswordResetEmail = window.sendPasswordResetEmail;
+const updatePassword = window.updatePassword;
+const updateProfile = window.updateProfile;
+const doc = window.doc;
+const getDoc = window.getDoc;
+const setDoc = window.setDoc;
+const updateDoc = window.updateDoc;
+const onSnapshot = window.onSnapshot;
 function usePersisted(currentUser){
   const fresh = (email) => ({name:"",email:email||"",accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[]});
   const [state,setState]=useState(fresh());
@@ -773,6 +790,54 @@ function App(){
     return el;
   })());
   function openImportDialog(){ __importEl.value = ''; __importEl.click(); }
+  function normalizeKey(k){
+    return String(k||"").trim().toLowerCase().replace(/[^a-z0-9]/g,"");
+  }
+  const FIELD_ALIASES = {
+    date: ["date","tradedate","datetime","time"],
+    symbol: ["symbol","pair","instrument","market","ticker"],
+    side: ["side","action","direction","position","type"],
+    lotsize: ["lotsize","lot","volume","qty","quantity","size","lotqty","position_size"],
+    entry: ["entry","entryprice","pricein","open","openprice","buyprice","sellprice","entryrate"],
+    exit: ["exit","exitprice","priceout","close","closeprice","exitrate"],
+    tp1: ["tp1","tp01","tp_1","takeprofit1","takeprofit","tp"],
+    tp2: ["tp2","tp02","tp_2","takeprofit2"],
+    sl: ["sl","stop","stoploss","stoplossprice","stoplevel"],
+    strategy: ["strategy","setup","playbook"],
+    exittype: ["exittype","exitstatus","closetype","closuretype","outcome"]
+  };
+  function getFirst(normRow, candidates){
+    for(const c of candidates){
+      if(c in normRow){
+        const v = normRow[c];
+        if(v!=="" && v!==null && v!==undefined) return v;
+      }
+    }
+    return undefined;
+  }
+  function excelSerialToISO(n){
+    // Excel serial date: days since 1899-12-30
+    const ms = (n - 25569) * 86400 * 1000;
+    const d = new Date(ms);
+    const tz = d.getTimezoneOffset()*60000;
+    return new Date(ms - tz).toISOString().slice(0,10);
+  }
+  function coerceISODate(v){
+    if(v===undefined || v===null || v==="") return todayISO();
+    if(typeof v==="number" && isFinite(v)) return excelSerialToISO(v);
+    if(v instanceof Date && !isNaN(v)) return new Date(v.getTime()-v.getTimezoneOffset()*60000).toISOString().slice(0,10);
+    const s=String(v).trim();
+    const tryD=new Date(s);
+    if(!isNaN(tryD)) return new Date(tryD.getTime()-tryD.getTimezoneOffset()*60000).toISOString().slice(0,10);
+    return todayISO();
+  }
+  function toNumberMaybe(v){
+    if(v===undefined||v===null||v==="") return undefined;
+    if(typeof v==="number") return v;
+    const s=String(v).replace(/,/g,"").trim();
+    const n=parseFloat(s);
+    return isNaN(n)?undefined:n;
+  }
   function rowsToTrades(rows){
     const out = [];
     for(const r of rows){
