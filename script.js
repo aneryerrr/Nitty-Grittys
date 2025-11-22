@@ -209,9 +209,9 @@ function SettingsPanel({name,setName,accType,setAccType,capital,setCapital,depos
             <div className="font-semibold mb-2">Symbols</div>
             <div className="flex gap-2 mb-2">
               <input value={symText} onChange={e=>setSymText(e.target.value.toUpperCase())} placeholder="e.g., XAUUSD" className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/>
-            <button onClick={()=>{if(symText && !cfg.symbols.includes(symText)){const n={...cfg,symbols:[...cfg.symbols,symText]};setCfg(n);}}} className="px-3 py-2 rounded-lg border border-slate-700">Add</button>
+              <button onClick={()=>{if(symText && !(cfg?.symbols || []).includes(symText)){const n={... (cfg || {}),symbols:[...(cfg?.symbols || []),symText]};setCfg(n);}}} className="px-3 py-2 rounded-lg border border-slate-700">Add</button>
             </div>
-            <div className="flex flex-wrap gap-2">{cfg.symbols.map(s=>(<span key={s} className="px-2 py-1 rounded-lg border border-slate-700">{s} <button onClick={()=>{const n={...cfg,symbols:cfg.symbols.filter(x=>x!==s)};setCfg(n)}} className="ml-1 text-red-300">×</button></span>))}</div>
+            <div className="flex flex-wrap gap-2">{(cfg?.symbols || []).map(s=>(<span key={s} className="px-2 py-1 rounded-lg border border-slate-700">{s} <button onClick={()=>{const n={... (cfg || {}),symbols:(cfg?.symbols || []).filter(x=>x!==s)};setCfg(n)}} className="ml-1 text-red-300">×</button></span>))}</div>
           </div>
           <div>
             <div className="font-semibold mb-2">Strategies (color used in tables)</div>
@@ -223,16 +223,16 @@ function SettingsPanel({name,setName,accType,setAccType,capital,setCapital,depos
                 <option value="red">Red</option>
                 <option value="mustard">Mustard orange</option>
               </select>
-              <button onClick={()=>{if(stratText){const n={...cfg,strategies:[...cfg.strategies,{name:stratText,color:stratColor}]};setCfg(n);}}} className="px-3 py-2 rounded-lg border border-slate-700">Add</button>
+              <button onClick={()=>{if(stratText){const n={... (cfg || {}),strategies:[...(cfg?.strategies || []),{name:stratText,color:stratColor}]};setCfg(n);}}} className="px-3 py-2 rounded-lg border border-slate-700">Add</button>
             </div>
             <div className="space-y-2">
-              {cfg.strategies.map((st,idx)=>(
+              {(cfg?.strategies || []).map((st,idx)=>(
                 <div key={idx} className="flex items-center gap-2">
                   <span className={`px-2 py-1 rounded-lg border border-slate-700 ${STRAT_COLORS[st.color]||""}`}>{st.name}</span>
-                  <select value={st.color} onChange={e=>{const ns=[...cfg.strategies];ns[idx]={...st,color:e.target.value};setCfg({...cfg,strategies:ns})}} className="bg-slate-900 border border-slate-700 rounded-xl px-2 py-1">
+                  <select value={st.color} onChange={e=>{const ns=[...(cfg?.strategies || [])];ns[idx]={...st,color:e.target.value};setCfg({... (cfg || {}),strategies:ns})}} className="bg-slate-900 border border-slate-700 rounded-xl px-2 py-1">
                     <option value="default">Default</option><option value="green">Green</option><option value="red">Red</option><option value="mustard">Mustard</option>
                   </select>
-                  <button onClick={()=>{const n={...cfg,strategies:cfg.strategies.filter((_,i)=>i!==idx)};setCfg(n)}} className="text-red-300 px-2 py-1 rounded-lg border border-red-700">Remove</button>
+                  <button onClick={()=>{const n={... (cfg || {}),strategies:(cfg?.strategies || []).filter((_,i)=>i!==idx)};setCfg(n)}} className="text-red-300 px-2 py-1 rounded-lg border border-red-700">Remove</button>
                 </div>
               ))}
             </div>
@@ -245,19 +245,19 @@ function SettingsPanel({name,setName,accType,setAccType,capital,setCapital,depos
 }
 /* ---------- Trade Modal (unchanged) ---------- */
 function TradeModal({initial,onClose,onSave,onDelete,accType,symbols,strategies}){
-  const i=initial||{}; const [symbol,setSymbol]=useState(i.symbol||symbols[0]); const [side,setSide]=useState(i.side||"BUY");
+  const i=initial||{}; const [symbol,setSymbol]=useState(i.symbol||(symbols?.[0] || "")); const [side,setSide]=useState(i.side||"BUY");
   const [date,setDate]=useState(i.date||todayISO()); const [lotSize,setLotSize]=useState(i.lotSize??0.01);
   const [entry,setEntry]=useState(i.entry??""); const [exit,setExit]=useState(i.exit??"");
   const [tp1,setTp1]=useState(i.tp1??""); const [tp2,setTp2]=useState(i.tp2??""); const [sl,setSl]=useState(i.sl??"");
-  const [strategy,setStrategy]=useState(i.strategy||(strategies[0]?.name||"")); const [exitType,setExitType]=useState(i.exitType||"TP");
+  const [strategy,setStrategy]=useState(i.strategy||((strategies?.[0]?.name)||"")); const [exitType,setExitType]=useState(i.exitType||"TP");
   const [pnlOverride,setPnlOverride]=useState(i.pnlOverride ?? "");
-  const num=v=>(v===""||v===undefined||v===null)?undefined:parseFloat(v);
-  const draft=useMemo(()=>({id:i.id,date,symbol,side,lotSize:parseFloat(lotSize||0),entry:num(entry),exit:num(exit),tp1:num(tp1),tp2:num(tp2),sl:num(sl),strategy,exitType,pnlOverride:(pnlOverride===""?undefined:parseFloat(pnlOverride))}),[i.id,date,symbol,side,lotSize,entry,exit,tp1,tp2,sl,strategy,exitType,pnlOverride]);
+  const num=v=>(v===""||v===undefined||v===null)?null:parseFloat(v);
+  const draft=useMemo(()=>({id:i.id,date,symbol,side,lotSize:parseFloat(lotSize||0),entry:num(entry),exit:num(exit),tp1:num(tp1),tp2:num(tp2),sl:num(sl),strategy,exitType,pnlOverride:(pnlOverride===""?null:parseFloat(pnlOverride))}),[i.id,date,symbol,side,lotSize,entry,exit,tp1,tp2,sl,strategy,exitType,pnlOverride]);
   const preview=useMemo(()=>{const v=computeDollarPnL(draft,accType);if(v===null||!isFinite(v))return"-";return`${formatPnlDisplay(accType,v)} (${formatUnits(accType,v)})`},[draft,accType]);
   return(
     <Modal title={i.id?"Edit Trade":"Add Trade"} onClose={onClose} maxClass="max-w-4xl">
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-        <div><label className="text-sm text-slate-300">Symbol</label><select value={symbol} onChange={e=>setSymbol(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">{symbols.map(s=><option key={s}>{s}</option>)}</select></div>
+        <div><label className="text-sm text-slate-300">Symbol</label><select value={symbol} onChange={e=>setSymbol(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">{(symbols || []).map(s=><option key={s}>{s}</option>)}</select></div>
         <div><label className="text-sm text-slate-300">Action</label><div className="mt-1 grid grid-cols-2 gap-2">{["BUY","SELL"].map(s=>(<button key={s} onClick={()=>setSide(s)} className={`px-2 py-2 rounded-lg border ${side===s ? (s==="BUY" ? "bg-green-600 border-green-500" : "bg-red-600 border-red-500") : "border-slate-700"}`}>{s}</button>))}</div></div>
         <div><label className="text-sm text-slate-300">Date</label><input type="date" value={date} onChange={e=>setDate(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
         <div><label className="text-sm text-slate-300">Lot size</label>
@@ -273,7 +273,7 @@ function TradeModal({initial,onClose,onSave,onDelete,accType,symbols,strategies}
         <div><label className="text-sm text-slate-300">Stop-Loss</label><input type="number" step="0.0001" value={sl} onChange={e=>setSl(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
         <div><label className="text-sm text-slate-300">Strategy</label>
           <select value={strategy} onChange={e=>setStrategy(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">
-            {strategies.map(s=><option key={s.name}>{s.name}</option>)}
+            {(strategies || DEFAULT_STRATEGIES).map(s=><option key={s.name}>{s.name}</option>)}
           </select>
         </div>
         <div><label className="text-sm text-slate-300">Exit Type</label><select value={exitType} onChange={e=>setExitType(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2">{EXIT_TYPES.map(s=><option key={s}>{s}</option>)}</select></div>
@@ -293,7 +293,7 @@ function TradeModal({initial,onClose,onSave,onDelete,accType,symbols,strategies}
 function CalendarModal({onClose,trades,view,setView,month,setMonth,year,setYear,selectedDate,setSelectedDate,accType}){
   const monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const dim=(y,m)=>new Date(y,m+1,0).getDate(); const fd=(y,m)=>new Date(y,m,1).getDay();
-  const byDate=useMemo(()=>{const m={};for(const t of trades){m[t.date]=m[t.date]||[];m[t.date].push(t)}return m},[trades]);
+  const byDate=useMemo(()=>{const m={};for(const t of (trades || [])){m[t.date]=m[t.date]||[];m[t.date].push(t)}return m},[trades]);
   const pnlByDate=useMemo(()=>{const m={};for(const date in byDate){const ts=byDate[date].filter(t=>t.exitType && t.exitType !== "Trade In Progress");const pnl=ts.reduce((a,t)=>a+ (computeDollarPnL(t,accType) || 0),0);m[date]=pnl}return m},[byDate,accType]);
   return(
     <Modal title="Calendar" onClose={onClose} maxClass="max-w-lg">
@@ -309,7 +309,7 @@ function CalendarModal({onClose,trades,view,setView,month,setMonth,year,setYear,
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
           {monthNames.map((mn,i)=>(<button key={mn} onClick={()=>{setMonth(i);setView('month')}} className="bg-slate-900/50 border border-slate-700 rounded-lg p-3 text-left">
             <div className="font-semibold mb-1">{mn}</div>
-            <div className="text-slate-400 text-xs">Trades: {trades.filter(t=>(new Date(t.date)).getMonth()===i&&(new Date(t.date)).getFullYear()===year).length}</div>
+            <div className="text-slate-400 text-xs">Trades: {(trades || []).filter(t=>(new Date(t.date)).getMonth()===i&&(new Date(t.date)).getFullYear()===year).length}</div>
           </button>))}
         </div>
       )}
@@ -343,10 +343,10 @@ function CalendarModal({onClose,trades,view,setView,month,setMonth,year,setYear,
 }
 /* ---------- Dashboard blocks (unchanged incl. BestStrategy) ---------- */
 function GeneralStats({trades,accType,capital,depositDate}){
-  const realized=trades.filter(t=>new Date(t.date)>=new Date(depositDate)&&t.exitType && t.exitType !== "Trade In Progress");
+  const realized=(trades || []).filter(t=>new Date(t.date)>=new Date(depositDate)&&t.exitType && t.exitType !== "Trade In Progress");
   const pnl=realized.map(t=>computeDollarPnL(t,accType)).filter(v=>v!==null&&isFinite(v));
   const total=pnl.reduce((a,b)=>a+b,0); const wins=pnl.filter(v=>v>0).length; const losses=pnl.filter(v=>v<0).length;
-  const open=trades.filter(t=> !t.exitType || t.exitType === "Trade In Progress").length; const wr=(wins+losses)>0?Math.round((wins/(wins+losses))*100):0;
+  const open=(trades || []).filter(t=> !t.exitType || t.exitType === "Trade In Progress").length; const wr=(wins+losses)>0?Math.round((wins/(wins+losses))*100):0;
   return(<div className="grid grid-cols-2 md:grid-cols-4 gap-3">
     <Stat label="Capital" value={accType==='Cent Account'?`${r2(capital*100).toFixed(2)} ¢`:fmt$(capital)}/>
     <Stat label="Realized P&L" value={formatPnlDisplay(accType,total)}/>
@@ -357,7 +357,7 @@ function GeneralStats({trades,accType,capital,depositDate}){
 function BestStrategy({trades,accType,strategies}){
   const data = useMemo(()=>{
     const map = new Map();
-    for(const t of trades){
+    for(const t of (trades || [])){
       const v = computeDollarPnL(t,accType);
       if(v===null || !isFinite(v)) continue;
       const key = t.strategy || "N/A";
@@ -367,7 +367,7 @@ function BestStrategy({trades,accType,strategies}){
     }
     const rows = [...map.entries()].map(([name,rec])=>({
       name, ...rec, winRate: rec.count? Math.round((rec.wins/rec.count)*100):0,
-      color: (strategies.find(s=>s.name===name)?.color)||"default"
+      color: ((strategies || []).find(s=>s.name===name)?.color)||"default"
     }));
     rows.sort((a,b)=> b.wins - a.wins || b.winRate - a.winRate);
     return rows[0] || null;
@@ -396,7 +396,7 @@ function BestStrategy({trades,accType,strategies}){
   )
 }
 function DetailedStats({trades,accType}){
-  const rows=useMemo(()=>{const m={};for(const t of trades){const k=t.symbol||"N/A";const v=computeDollarPnL(t,accType);const s=m[k]||{count:0,pnl:0};s.count+=1;s.pnl+=(v&&isFinite(v))?v:0;m[k]=s}return Object.entries(m).map(([sym,v])=>({sym,count:v.count,pnl:v.pnl}))},[trades,accType]);
+  const rows=useMemo(()=>{const m={};for(const t of (trades || [])){const k=t.symbol||"N/A";const v=computeDollarPnL(t,accType);const s=m[k]||{count:0,pnl:0};s.count+=1;s.pnl+=(v&&isFinite(v))?v:0;m[k]=s}return Object.entries(m).map(([sym,v])=>({sym,count:v.count,pnl:v.pnl}))},[trades,accType]);
   return(<div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4">
     <div className="text-sm font-semibold mb-2">Detailed Statistics</div>
     <div className="overflow-auto"><table className="min-w-full text-sm"><thead><tr><Th>Symbol</Th><Th>Trades</Th><Th>Total P&L</Th><Th>P&L (Units)</Th></tr></thead>
@@ -427,11 +427,11 @@ function Histories({trades,accType,onEdit,onDelete,strategies,onClearAll}){
             </tr>
           </thead>
           <tbody>
-            {trades.map(t=>{
+            {(trades || []).map(t=>{
               const v=computeDollarPnL(t,accType);
               const status = (t.exitType && t.exitType!=="Trade In Progress") ? "CLOSED" : "OPEN";
               const color = v===0? "text-amber-400" : v>0? "text-green-400" : v<0? "text-red-400":"";
-              const strat = strategies.find(s => s.name === t.strategy);
+              const strat = (strategies || []).find(s => s.name === t.strategy);
               const stratColor = strat ? strat.color : "default";
               return (
                 <tr key={t.id} className="tr-row">
@@ -468,33 +468,15 @@ function Histories({trades,accType,onEdit,onDelete,strategies,onClearAll}){
   )
 }
 /* ---------- Notes (uniform preview width; everything else unchanged) ---------- */
-function NotesPanel({trades, currentUser}){
-  const [items,setItems]=useState([]);
+function NotesPanel({trades, currentUser, notes, setNotes}){
   const [show,setShow]=useState(false);
   const [draft,setDraft]=useState(null);
-  useEffect(()=>{
-    if(!currentUser) return;
-    const docRef = doc(db, `users/${currentUser.uid}`);
-    const unsubscribe = onSnapshot(docRef, (snap) => {
-      setItems(snap.data()?.notes || []);
-    });
-    return unsubscribe;
-  },[currentUser]);
   const saveNote=async(rec)=>{
-    let arr=[...items]; if(rec.id){const i=arr.findIndex(x=>x.id===rec.id);if(i>=0)arr[i]=rec}else{arr.unshift({...rec,id:Math.random().toString(36).slice(2)})} 
-    setItems(arr); 
-    if(currentUser) {
-      const docRef = doc(db, `users/${currentUser.uid}`);
-      await updateDoc(docRef, {notes:arr});
-    }
-    setShow(false);
+    let arr=[...(notes || [])]; if(rec.id){const i=arr.findIndex(x=>x.id===rec.id);if(i>=0)arr[i]=rec}else{arr.unshift({...rec,id:Math.random().toString(36).slice(2)})} 
+    setNotes(arr); 
   };
   const delNote=async(id)=>{
-    const arr=items.filter(x=>x.id!==id); setItems(arr); 
-    if(currentUser) {
-      const docRef = doc(db, `users/${currentUser.uid}`);
-      await updateDoc(docRef, {notes:arr});
-    }
+    const arr=(notes || []).filter(x=>x.id!==id); setNotes(arr); 
   };
   return(
     <div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4">
@@ -502,7 +484,7 @@ function NotesPanel({trades, currentUser}){
         <button onClick={()=>{setDraft(null);setShow(true)}} className="px-3 py-2 rounded-lg border border-slate-700 flex items-center gap-2"><IconNote/>New note</button>
       </div>
       <div className="space-y-3">
-        {items.map(n=>(
+        {(notes || []).map(n=>(
           <div key={n.id} className="note-card bg-slate-900/50 border border-slate-700 rounded-xl p-3 flex flex-col">
             <div className="font-semibold mb-1 truncate">{n.title}</div>
             <div className="text-slate-400 text-xs mb-2">{n.date}</div>
@@ -523,7 +505,7 @@ function NotesPanel({trades, currentUser}){
 function NoteModal({onClose,onSave,initial,trades}){
   const i=initial||{}; const [title,setTitle]=useState(i.title||""); const [date,setDate]=useState(i.date||todayISO());
   const [content,setContent]=useState(i.content||"");
-  const todaysTrades = trades.filter(t=>t.date===date);
+  const todaysTrades = (trades || []).filter(t=>t.date===date);
   const [refId,setRefId]=useState(i.refId||"");
   const editorRef=useRef(null);
   useEffect(()=>{if(editorRef.current) editorRef.current.innerHTML = content;},[]);
@@ -638,7 +620,7 @@ function LoginView({resetStart}){
   const [email,setEmail]=useState(""); const [password,setPassword]=useState(""); const [showPw,setShowPw]=useState(false);
   const [name,setName]=useState(""); const [confirm,setConfirm]=useState(""); const [err,setErr]=useState("");
   const googleDiv=useRef(null);
-  useEffect(()=>{initGoogle(googleDiv.current,(resp)=>{const p=parseJwt(resp.credential);if(p&&p.email){const credential=GoogleAuthProvider.credential(resp.credential);signInWithCredential(auth,credential).catch(e=>setErr(e.message));}})},[]);
+  useEffect(()=>{initGoogle(googleDiv.current,(resp)=>{const p=parseJwt(resp.credential);if(p&&p.email){const credential=GoogleAuthProvider.credential(null, resp.credential);signInWithCredential(auth,credential).catch(e=>setErr(e.message));}})},[]);
   const submit=async()=>{setErr(""); if(mode==="login"){if(!email||!password)return setErr("Fill all fields.");
     try{await signInWithEmailAndPassword(auth, email,password)}catch(error){if(error.code==='auth/user-not-found'){try{await createUserWithEmailAndPassword(auth, email,password)}catch(e){setErr(e.message);return}}else{setErr(error.message);return}}}
     else{if(!name||!email||!password||!confirm)return setErr("Fill all fields."); if(password!==confirm)return setErr("Passwords do not match.");
@@ -705,48 +687,34 @@ const getDoc = window.getDoc;
 const setDoc = window.setDoc;
 const updateDoc = window.updateDoc;
 const onSnapshot = window.onSnapshot;
-function usePersisted(currentUser){
-  const fresh = (email) => ({name:"",email:email||"",accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[]});
-  const [state,setState]=useState(fresh());
+function usePersisted(currentUser, field, defaultValue){
+  const fresh = defaultValue;
+  const [data,setData]=useState(fresh);
   useEffect(()=>{
     if(!currentUser) return;
     const docRef = doc(db, `users/${currentUser.uid}`);
     const unsubscribe = onSnapshot(docRef, (snap)=>{
-      let s = snap.data()?.state || fresh(currentUser.email);
-      s.name = currentUser.displayName || s.name;
-      setState(s);
+      let d = snap.data()?.[field] || fresh;
+      if(field === 'state') d.name = currentUser.displayName || d.name || "";
+      setData(d);
     });
     return unsubscribe;
-  },[currentUser]);
+  },[currentUser, field]);
   useEffect(()=>{
     if(!currentUser) return;
     const docRef = doc(db, `users/${currentUser.uid}`);
-    updateDoc(docRef, {state}).catch(e=>console.error("Update state error:",e));
-  },[state,currentUser]);
-  return [state,setState];
-}
-function useCfg(currentUser){
-  const [cfg,setCfg]=useState({symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES});
-  useEffect(()=>{
-    if(!currentUser) return;
-    const docRef = doc(db, `users/${currentUser.uid}`);
-    const unsubscribe = onSnapshot(docRef, (snap)=>{
-      setCfg(snap.data()?.cfg || {symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES});
-    });
-    return unsubscribe;
-  },[currentUser]);
-  useEffect(()=>{
-    if(!currentUser) return;
-    const docRef = doc(db, `users/${currentUser.uid}`);
-    updateDoc(docRef, {cfg}).catch(e=>console.error("Update cfg error:",e));
-  },[cfg,currentUser]);
-  return [cfg,setCfg];
+    updateDoc(docRef, {[field]: data}).catch(e=>console.error(`Update ${field} error:`,e));
+  },[data,currentUser, field]);
+  return [data,setData];
 }
 function App(){
   const [currentUser,setCurrentUser]=useState(null);
   const [loading,setLoading]=useState(true);
-  const [state,setState]=usePersisted(currentUser);
-  const [cfg,setCfg]=usePersisted(currentUser);
+  const freshState = (email) => ({name:"",email:email||"",accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[]});
+  const [state,setState]=usePersisted(currentUser, 'state', freshState(currentUser?.email));
+  const freshCfg = {symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES};
+  const [cfg,setCfg]=usePersisted(currentUser, 'cfg', freshCfg);
+  const [notes,setNotes]=usePersisted(currentUser, 'notes', []);
   const [page,setPage]=useState("dashboard");
   const [showTrade,setShowTrade]=useState(false); const [editItem,setEditItem]=useState(null);
   const [showAcct,setShowAcct]=useState(false);
@@ -768,7 +736,7 @@ function App(){
             console.log("Migrating historic data to Firebase...");
             await setDoc(docRef, {
               state: localS,
-              cfg: loadCfg(legacyEmail) || {symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES},
+              cfg: loadCfg(legacyEmail) || freshCfg,
               notes: JSON.parse(localStorage.getItem("ng_notes")||"[]")
             });
             // Clear legacy localStorage
@@ -776,8 +744,8 @@ function App(){
           } else {
             // New user, set defaults
             await setDoc(docRef, {
-              state: fresh(user.email),
-              cfg: {symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES},
+              state: freshState(user.email),
+              cfg: freshCfg,
               notes: []
             });
           }
@@ -841,11 +809,11 @@ function App(){
     return todayISO();
   }
   function toNumberMaybe(v){
-    if(v===undefined||v===null||v==="") return undefined;
+    if(v===undefined||v===null||v==="") return null;
     if(typeof v==="number") return v;
     const s=String(v).replace(/,/g,"").trim();
     const n=parseFloat(s);
-    return isNaN(n)?undefined:n;
+    return isNaN(n)?null:n;
   }
   function rowsToTrades(rows){
     const out = [];
@@ -871,7 +839,7 @@ function App(){
       t.strategy = String( getFirst(norm, FIELD_ALIASES.strategy) || DEFAULT_STRATEGIES[0].name );
       t.exitType = String( getFirst(norm, FIELD_ALIASES.exittype) || "Trade In Progress" );
       // Skip totally empty rows (no symbol, no numbers)
-      const hasAny = t.symbol || t.entry!==undefined || t.exit!==undefined || t.tp1!==undefined || t.tp2!==undefined || t.sl!==undefined;
+      const hasAny = t.symbol || t.entry!==null || t.exit!==null || t.tp1!==null || t.tp2!==null || t.sl!==null;
       if(hasAny) out.push(t);
     }
     return out;
@@ -885,7 +853,7 @@ function App(){
         const ws = wb.Sheets[wb.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(ws, { defval:'', raw:true, blankrows:false });
         const trades = rowsToTrades(rows);
-        setState(s => ({ ...s, trades: [...trades.reverse(), ...s.trades] })); // keep existing order as before
+        setState(s => ({ ...s, trades: [...trades.reverse(), ...(s.trades || [])] })); // keep existing order as before
       }catch(err){
         console.error('Import error:', err);
         alert('Unable to import this file. Please check the format.');
@@ -895,11 +863,11 @@ function App(){
   }
   const onLogout=()=>{signOut(auth)};
   const resetStart=()=>{setShowReset(true)};
-  const addOrUpdate=(draft)=>{const id=draft.id||Math.random().toString(36).slice(2); const arr=state.trades.slice(); const idx=arr.findIndex(t=>t.id===id); const rec={...draft,id}; if(idx>=0)arr[idx]=rec; else arr.unshift(rec); setState({...state,trades:arr}); setShowTrade(false); setEditItem(null)};
-  const delTrade=(id)=>setState({...state,trades:state.trades.filter(t=>t.id!==id)});
+  const addOrUpdate=(draft)=>{const id=draft.id||Math.random().toString(36).slice(2); const arr=(state.trades || []).slice(); const idx=arr.findIndex(t=>t.id===id); const rec={...draft,id}; if(idx>=0)arr[idx]=rec; else arr.unshift(rec); setState({...state,trades:arr}); setShowTrade(false); setEditItem(null)};
+  const delTrade=(id)=>setState({...state,trades:(state.trades || []).filter(t=>t.id!==id)});
   const clearAllTrades=()=>setState({...state,trades:[]});
-  const openTrades=state.trades.filter(t=> !t.exitType || t.exitType === "Trade In Progress").length;
-  const realized=state.trades.filter(t=>new Date(t.date)>=new Date(state.depositDate)&&t.exitType && t.exitType !== "Trade In Progress").map(t=>computeDollarPnL(t,state.accType)).filter(v=>v!==null&&isFinite(v)).reduce((a,b)=>a+b,0);
+  const openTrades=(state.trades || []).filter(t=> !t.exitType || t.exitType === "Trade In Progress").length;
+  const realized=(state.trades || []).filter(t=>new Date(t.date)>=new Date(state.depositDate)&&t.exitType && t.exitType !== "Trade In Progress").map(t=>computeDollarPnL(t,state.accType)).filter(v=>v!==null&&isFinite(v)).reduce((a,b)=>a+b,0);
   const effectiveCapital=state.capital+realized;
   if(loading) return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   if(!currentUser) return <><LoginView resetStart={resetStart}/>{showReset&&<ResetModal email="" onClose={()=>setShowReset(false)}/>}</>;
@@ -929,7 +897,7 @@ function App(){
         <BestStrategy trades={state.trades} accType={state.accType} strategies={cfg.strategies}/>
       </div>)}
       {page==="histories"&&(<Histories trades={state.trades} accType={state.accType} onEdit={t=>{setEditItem(t);setShowTrade(true)}} onDelete={delTrade} strategies={cfg.strategies} onClearAll={clearAllTrades}/>)}
-      {page==="notes"&&(<NotesPanel trades={state.trades} currentUser={currentUser}/>)}
+      {page==="notes"&&(<NotesPanel trades={state.trades} currentUser={currentUser} notes={notes} setNotes={setNotes}/>)}
       {page==="settings"&&(<SettingsPanel
         name={state.name} setName={v=>setState({...state,name:v})}
         accType={state.accType} setAccType={v=>setState({...state,accType:v})}
