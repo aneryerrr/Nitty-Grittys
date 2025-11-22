@@ -1,7 +1,7 @@
 html,body,#root{height:100%}
 /* Login left panel: deep blue, no image */
 .hero{
-  background:#06102b; /* deep blue */
+  background:#0a1d4d; /* deep blue */
 }
 /* scrollers */
 .scroll-smooth::-webkit-scrollbar{height:8px;width:8px}
