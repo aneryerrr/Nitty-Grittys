@@ -18,11 +18,15 @@
   <div id="root"></div>
   <!-- Firebase SDK (modular, v12.6.0) -->
   <script type="module">
+    // Import the functions you need from the SDKs you need
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+    // TODO: Add SDKs for Firebase products that you want to use
+    // https://firebase.google.com/docs/web/setup#available-libraries
     import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, sendPasswordResetEmail, updatePassword, updateProfile } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+    import { getFirestore, doc as firestoreDoc, getDoc, setDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
     // Your web app's Firebase configuration
+    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
     const firebaseConfig = {
       apiKey: "AIzaSyCdYPMv65UnKb0FE7YajJKXVq-2QebobJM",
       authDomain: "nittygritty-d5d13.firebaseapp.com",
@@ -46,7 +50,7 @@
     window.sendPasswordResetEmail = sendPasswordResetEmail;
     window.updatePassword = updatePassword;
     window.updateProfile = updateProfile;
-    window.doc = doc;
+    window.doc = firestoreDoc;
     window.getDoc = getDoc;
     window.setDoc = setDoc;
     window.updateDoc = updateDoc;
