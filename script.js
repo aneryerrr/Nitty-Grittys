@@ -7,7 +7,6 @@
    - Kept exactly as-is: Reset History, Best Strategy, Settings icon, Forgot password
 */
 const {useState,useMemo,useEffect,useRef} = React;
-
 /* ---------- Icons (unchanged) ---------- */
 const iconCls="h-5 w-5";
 const IconUser=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5Z"/><path d="M4 20a8 8 0 0 1 16 0Z"/></svg>);
@@ -22,7 +21,6 @@ const IconSettings=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentCol
 const IconHome=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9v12h14V9"/></svg>);
 const IconNote=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M3 7a2 2 0 0 1 2-2h8l4 4v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M13 3v4h4"/></svg>);
 const IconSave=(p)=>(<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconCls} {...p}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l3 3v13a2 2 0 0 1-2 2Z"/><path d="M7 3v5h8"/><path d="M7 13h10"/><path d="M7 17h6"/></svg>);
-
 /* ---------- Data & Utils ---------- */
 const LOGO_PUBLIC="/logo-ng.png"; const LOGO_FALLBACK="./logo-ng.png.png";
 const DEFAULT_SYMBOLS=["XAUUSD","US100","US30","EURUSD","BTCUSD","AUDCAD","USDCAD","USDJPY","GBPUSD"];
@@ -42,15 +40,10 @@ const todayISO=()=>{const d=new Date();const tz=d.getTimezoneOffset();return new
 const USERS_KEY="ng_users_v1";
 const CURR_KEY="ng_current_user_v1";
 const CFG_KEY =(email)=>"ng_cfg_"+email;
+// Legacy local functions for migration only
 const loadUsers=()=>{try{return JSON.parse(localStorage.getItem(USERS_KEY)||"[]")}catch{return[]}};
-const saveUsers=u=>{try{localStorage.setItem(USERS_KEY,JSON.stringify(u))}catch{}};
-const saveCurrent=e=>{try{localStorage.setItem(CURR_KEY,e)}catch{}};
-const getCurrent=()=>{try{return localStorage.getItem(CURR_KEY)||""}catch{return""}};
-const loadState=e=>{try{return JSON.parse(localStorage.getItem("ng_state_"+e)||"null")}catch{return null}};
-const saveState=(e,s)=>{try{localStorage.setItem("ng_state_"+e,JSON.stringify(s))}catch{}};
+const loadState=(e)=>{try{return JSON.parse(localStorage.getItem("ng_state_"+e)||"null")}catch{return null}};
 const loadCfg=(e)=>{try{return JSON.parse(localStorage.getItem(CFG_KEY(e))||"null")}catch{return null}};
-const saveCfg=(e,c)=>{try{localStorage.setItem(CFG_KEY(e),JSON.stringify(c))}catch{}};
-
 /* Tick/pip → $ approximation (unchanged) */
 function perLotValueForMove(symbol,delta,accType){
   const abs=Math.abs(delta);const isStd=accType==="Dollar Account";const mult=std=>isStd?std:std/100;
@@ -85,7 +78,6 @@ function computeDollarPnL(t,accType){
 }
 const formatPnlDisplay=(accType,v)=>accType==="Cent Account"?(r2(v*100)).toFixed(2)+" ¢":fmt$(v);
 const formatUnits=(accType,v)=>accType==="Dollar Account"?r2(v).toFixed(2):r2(v*100).toFixed(2);
-
 /* CSV export (unchanged) */
 function toCSV(rows,accType){
   const H=["Date","Symbol","Side","Lot Size","Entry","Exit","TP1","TP2","SL","Strategy","Exit Type","P&L","P&L (Units)"];
@@ -100,7 +92,6 @@ function toCSV(rows,accType){
   }
   return BOM+out.join(NL);
 }
-
 /* ---------- Small UI helpers ---------- */
 function Stat({label,value}){return(<div className="bg-slate-900/50 border border-slate-700 rounded-xl p-3"><div className="text-slate-400 text-xs">{label}</div><div className="text-2xl font-bold mt-1">{value}</div></div>)}
 function Th({children,className,...rest}){return(<th {...rest} className={(className?className+" ":"")+"px-4 py-3 text-left font-semibold text-slate-300"}>{children}</th>)}
@@ -131,7 +122,6 @@ function Confirm({title,message,confirmText="Continue",cancelText="Discard",onCo
     </Modal>
   )
 }
-
 /* ---------- Error Boundary ---------- */
 class ErrorBoundary extends React.Component{
   constructor(p){super(p);this.state={err:null}}
@@ -141,15 +131,13 @@ class ErrorBoundary extends React.Component{
     return this.props.children;
   }
 }
-
 /* ---------- Account Setup Modal (unchanged) ---------- */
 function AccountSetupModal({name,setName,accType,setAccType,capital,setCapital,depositDate,setDepositDate,onClose,email}){
   const [tab,setTab]=useState("personal");
   const [pw1,setPw1]=useState(""); const [pw2,setPw2]=useState(""); const [msg,setMsg]=useState("");
   const savePw=()=>{ if(!pw1||pw1.length<6){setMsg("Password must be at least 6 characters.");return}
     if(pw1!==pw2){setMsg("Passwords do not match.");return}
-    const users=loadUsers(); const i=users.findIndex(u=>u.email.toLowerCase()===(email||"").toLowerCase());
-    if(i>=0){users[i].password=pw1; saveUsers(users); setMsg("Password updated."); setPw1(""); setPw2("")}
+    auth.currentUser.updatePassword(pw1).then(()=>setMsg("Password updated.")).catch(e=>setMsg(e.message)); setPw1(""); setPw2("");
   };
   return(
     <Modal title="Account Setup" onClose={onClose} maxClass="max-w-2xl">
@@ -178,15 +166,13 @@ function AccountSetupModal({name,setName,accType,setAccType,capital,setCapital,d
     </Modal>
   )
 }
-
 /* ---------- Settings Panel (unchanged UI/glyph) ---------- */
 function SettingsPanel({name,setName,accType,setAccType,capital,setCapital,depositDate,setDepositDate,email,cfg,setCfg}){
   const [tab,setTab]=useState("personal");
   const [pw1,setPw1]=useState(""); const [pw2,setPw2]=useState(""); const [msg,setMsg]=useState("");
   const savePw=()=>{ if(!pw1||pw1.length<6){setMsg("Password must be at least 6 characters.");return}
     if(pw1!==pw2){setMsg("Passwords do not match.");return}
-    const users=loadUsers();const i=users.findIndex(u=>u.email.toLowerCase()===(email||"").toLowerCase());
-    if(i>=0){users[i].password=pw1;saveUsers(users);setMsg("Password updated.");setPw1("");setPw2("")}
+    auth.currentUser.updatePassword(pw1).then(()=>setMsg("Password updated.")).catch(e=>setMsg(e.message)); setPw1(""); setPw2("");
   };
   const [symText,setSymText]=useState("");
   const [stratText,setStratText]=useState(""); const [stratColor,setStratColor]=useState("default");
@@ -256,7 +242,6 @@ function SettingsPanel({name,setName,accType,setAccType,capital,setCapital,depos
     </div>
   )
 }
-
 /* ---------- Trade Modal (unchanged) ---------- */
 function TradeModal({initial,onClose,onSave,onDelete,accType,symbols,strategies}){
   const i=initial||{}; const [symbol,setSymbol]=useState(i.symbol||symbols[0]); const [side,setSide]=useState(i.side||"BUY");
@@ -303,7 +288,6 @@ function TradeModal({initial,onClose,onSave,onDelete,accType,symbols,strategies}
     </Modal>
   )
 }
-
 /* ---------- Calendar (unchanged) ---------- */
 function CalendarModal({onClose,trades,view,setView,month,setMonth,year,setYear,selectedDate,setSelectedDate,accType}){
   const monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -356,7 +340,6 @@ function CalendarModal({onClose,trades,view,setView,month,setMonth,year,setYear,
     </Modal>
   )
 }
-
 /* ---------- Dashboard blocks (unchanged incl. BestStrategy) ---------- */
 function GeneralStats({trades,accType,capital,depositDate}){
   const realized=trades.filter(t=>new Date(t.date)>=new Date(depositDate)&&t.exitType && t.exitType !== "Trade In Progress");
@@ -424,7 +407,6 @@ function DetailedStats({trades,accType}){
         </tr>))}</tbody></table></div>
   </div>)
 }
-
 /* ---------- Histories (unchanged; Reset works) ---------- */
 function Histories({trades,accType,onEdit,onDelete,strategies,onClearAll}){
   const [ask,setAsk]=useState(false);
@@ -484,14 +466,29 @@ function Histories({trades,accType,onEdit,onDelete,strategies,onClearAll}){
     </div>
   )
 }
-
 /* ---------- Notes (uniform preview width; everything else unchanged) ---------- */
-function NotesPanel({trades}){
-  const [items,setItems]=useState(()=>{try{return JSON.parse(localStorage.getItem("ng_notes")||"[]")}catch{return[]}});
+function NotesPanel({trades, currentUser}){
+  const [items,setItems]=useState([]);
   const [show,setShow]=useState(false);
   const [draft,setDraft]=useState(null);
-  const save=rec=>{let arr=[...items]; if(rec.id){const i=arr.findIndex(x=>x.id===rec.id);if(i>=0)arr[i]=rec}else{arr.unshift({...rec,id:Math.random().toString(36).slice(2)})} setItems(arr); localStorage.setItem("ng_notes",JSON.stringify(arr)); setShow(false);};
-  const del=id=>{const arr=items.filter(x=>x.id!==id); setItems(arr); localStorage.setItem("ng_notes",JSON.stringify(arr));};
+  useEffect(()=>{
+    if(!currentUser) return;
+    const load=async()=>{
+      const doc=await db.doc(`users/${currentUser.uid}/data`).get();
+      setItems(doc.data()?.notes || []);
+    };
+    load();
+  },[currentUser]);
+  const saveNote=async(rec)=>{
+    let arr=[...items]; if(rec.id){const i=arr.findIndex(x=>x.id===rec.id);if(i>=0)arr[i]=rec}else{arr.unshift({...rec,id:Math.random().toString(36).slice(2)})} 
+    setItems(arr); 
+    if(currentUser) await db.doc(`users/${currentUser.uid}/data`).update({notes:arr});
+    setShow(false);
+  };
+  const delNote=async(id)=>{
+    const arr=items.filter(x=>x.id!==id); setItems(arr); 
+    if(currentUser) await db.doc(`users/${currentUser.uid}/data`).update({notes:arr});
+  };
   return(
     <div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-4">
       <div className="flex items-center justify-between mb-2"><div className="flex items-center gap-2"><IconNote/><div className="text-sm font-semibold">Notes</div></div>
@@ -507,12 +504,12 @@ function NotesPanel({trades}){
             </div>
             <div className="mt-3 flex gap-2">
               <button onClick={()=>{setDraft(n);setShow(true)}} className="px-2 py-1 rounded-lg border border-slate-700">✎</button>
-              <button onClick={()=>del(n.id)} className="px-2 py-1 rounded-lg border border-red-700 text-red-300">✕</button>
+              <button onClick={()=>delNote(n.id)} className="px-2 py-1 rounded-lg border border-red-700 text-red-300">✕</button>
             </div>
           </div>
         ))}
       </div>
-      {show&&<NoteModal onClose={()=>setShow(false)} onSave={save} initial={draft} trades={trades}/>}
+      {show&&<NoteModal onClose={()=>setShow(false)} onSave={saveNote} initial={draft} trades={trades}/>}
     </div>
   )
 }
@@ -577,7 +574,6 @@ function NoteModal({onClose,onSave,initial,trades}){
     </Modal>
   )
 }
-
 /* ---------- Header / Shell (unchanged) ---------- */
 function UserMenu({onExport,onImport,onLogout}){
   const [open,setOpen]=useState(false);
@@ -617,57 +613,27 @@ function AppShell({children,capitalPanel,nav,logoSrc,onToggleSidebar,onExport,on
     </div>
   </div>)
 }
-
 /* ---------- Login & Forgot Password (unchanged behavior) ---------- */
-function parseJwt(token){try{return JSON.parse(atob(token.split('.')[1]))}catch{return null}}
 function ResetModal({email,onClose}){
-  const [e,setE]=useState(email||""); const [link,setLink]=useState(""); const [msg,setMsg]=useState("");
-  const start=async ()=>{const users=loadUsers();const u=users.find(x=>x.email.toLowerCase()===e.toLowerCase());if(!u){setMsg("No account for that email.");return}
-    const token=Math.random().toString(36).slice(2); const exp=Date.now()+1000*60*15; localStorage.setItem("ng_reset_"+token,JSON.stringify({email:e,exp}));
-    const url=location.origin+location.pathname+"#reset="+token; setLink(url);
-    const first_name = (u.name||e).split(' ')[0];
-    const reset_link = url; const expiry_time = "15 minutes";
-    try {
-      await emailjs.send('service_66nh71a', 'template_067iydk', { to_email: e, first_name, reset_link, expiry_time });
-      setMsg('Reset email sent successfully. Check your inbox (or spam).');
-    } catch (error) {
-      setMsg('Failed to send email: ' + (error?.text || 'Unknown error.'));
-    }
-  }
+  const [e,setE]=useState(email||""); const [msg,setMsg]=useState("");
+  const start=()=>{auth.sendPasswordResetEmail(e).then(()=>setMsg("Reset email sent. Check your inbox (or spam).")).catch(error=>setMsg("Failed to send: " + error.message));}
   return(<Modal title="Password reset" onClose={onClose} maxClass="max-w-md">
     <div className="space-y-3">
       <div><label className="text-sm text-slate-300">Your email</label><input value={e} onChange={ev=>setE(ev.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
       <button onClick={start} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500">Send reset link</button>
       {msg&&<div className="text-sky-400 text-sm">{msg}</div>}
-      {link&&<div className="text-xs break-all text-slate-300 mt-2">{link}</div>}
     </div>
   </Modal>)
 }
-function NewPasswordModal({token,onClose}){
-  const recRaw=localStorage.getItem("ng_reset_"+token); const rec=recRaw?JSON.parse(recRaw):null;
-  const [pw1,setPw1]=useState(""); const [pw2,setPw2]=useState(""); const [msg,setMsg]=useState("");
-  const confirm=()=>{ if(!rec||Date.now()>rec.exp){setMsg("Link expired.");return}
-    if(!pw1||pw1.length<6){setMsg("Password must be at least 6 characters.");return}
-    if(pw1!==pw2){setMsg("Passwords do not match.");return}
-    const users=loadUsers();const i=users.findIndex(x=>x.email.toLowerCase()===rec.email.toLowerCase()); if(i>=0){users[i].password=pw1;saveUsers(users); localStorage.removeItem("ng_reset_"+token); setMsg("Password updated. You can close this window.");}
-  };
-  return(<Modal title="Create new password" onClose={onClose} maxClass="max-w-md">
-    <div className="space-y-3">
-      <div><label className="text-sm text-slate-300">New password</label><input type="password" value={pw1} onChange={e=>setPw1(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
-      <div><label className="text-sm text-slate-300">Confirm password</label><input type="password" value={pw2} onChange={e=>setPw2(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
-      {msg&&<div className="text-sky-400 text-sm">{msg}</div>}
-      <button onClick={confirm} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500">Update</button>
-    </div>
-  </Modal>)
-}
-function LoginView({onLogin,onSignup,initGoogle,resetStart}){
+function LoginView({resetStart}){
   const [mode,setMode]=useState("login");
   const [email,setEmail]=useState(""); const [password,setPassword]=useState(""); const [showPw,setShowPw]=useState(false);
   const [name,setName]=useState(""); const [confirm,setConfirm]=useState(""); const [err,setErr]=useState("");
-  const googleDiv=useRef(null);
-  useEffect(()=>{initGoogle(googleDiv.current,(payloadEmail)=>{setErr(""); onLogin(payloadEmail,"__google__",()=>{})})},[]);
-  const submit=()=>{setErr(""); if(mode==="login"){if(!email||!password)return setErr("Fill all fields."); onLogin(email,password,setErr)}
-    else{if(!name||!email||!password||!confirm)return setErr("Fill all fields."); if(password!==confirm)return setErr("Passwords do not match."); onSignup(name,email,password,setErr)}};
+  const submit=async()=>{setErr(""); if(mode==="login"){if(!email||!password)return setErr("Fill all fields.");
+    try{await auth.signInWithEmailAndPassword(email,password)}catch(error){if(error.code==='auth/user-not-found'){try{await auth.createUserWithEmailAndPassword(email,password)}catch(e){setErr(e.message);return}}else{setErr(error.message);return}}}
+    else{if(!name||!email||!password||!confirm)return setErr("Fill all fields."); if(password!==confirm)return setErr("Passwords do not match.");
+      try{const cred=await auth.createUserWithEmailAndPassword(email,password); await cred.user.updateProfile({displayName:name});}catch(e){setErr(e.message)}}};
+  const googleLogin=async()=>{const provider=new firebase.auth.GoogleAuthProvider(); try{await auth.signInWithPopup(provider);}catch(e){setErr(e.message)}};
   return(<div className="min-h-screen grid md:grid-cols-2">
     {/* Left panel – now solid deep blue (no image); color via CSS class `.hero` */}
     <div className="hidden md:flex hero items-center justify-center">
@@ -698,92 +664,108 @@ function LoginView({onLogin,onSignup,initGoogle,resetStart}){
         {mode==="signup"&&(<div className="mb-4"><label className="text-sm text-slate-300">Confirm Password</label><input type={showPw?"text":"password"} value={confirm} onChange={e=>setConfirm(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>)}
         {err&&<div className="text-red-400 text-sm mb-3">{err}</div>}
         <div className="flex items-center justify-between">
-          <div id="googleDiv" ref={googleDiv}></div>
+          <button onClick={googleLogin} className="px-4 py-2 rounded-lg border border-slate-700 hover:bg-slate-700">Sign in with Google</button>
           <button onClick={submit} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500">Continue</button>
         </div>
       </div>
     </div>
   </div>)
 }
-
 /* ---------- App ---------- */
-function usePersisted(email){
-  const fresh = () => ({name:"",email:email||"",accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[]});
-  const [state,setState]=useState(()=>{const s=loadState(email||getCurrent());return s||fresh()});
-  useEffect(()=>{const loaded = loadState(email); setState(loaded || fresh());}, [email]);
-  useEffect(()=>{if(!state||!state.email)return; saveState(state.email,state)},[state]);
+// Initialize Firebase (paste your config here from Firebase console)
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY_HERE",
+  authDomain: "nitty-gritty.firebaseapp.com",
+  projectId: "nitty-gritty",
+  storageBucket: "nitty-gritty.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID_HERE",
+  appId: "YOUR_APP_ID_HERE"
+};
+const firebaseApp = firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth(firebaseApp);
+const db = firebase.firestore(firebaseApp);
+function usePersisted(currentUser){
+  const fresh = (email) => ({name:"",email:email||"",accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[]});
+  const [state,setState]=useState(fresh());
+  useEffect(()=>{
+    if(!currentUser) return;
+    const docRef = db.doc(`users/${currentUser.uid}/data`);
+    const unsubscribe = docRef.onSnapshot(doc=>{
+      let s = doc.data()?.state || fresh(currentUser.email);
+      s.name = currentUser.displayName || s.name;
+      setState(s);
+    });
+    return unsubscribe;
+  },[currentUser]);
+  useEffect(()=>{
+    if(!currentUser) return;
+    db.doc(`users/${currentUser.uid}/data`).update({state}).catch(e=>console.error("Update state error:",e));
+  },[state,currentUser]);
   return [state,setState];
 }
-
-/* -------- Robust import utilities -------- */
-function normalizeKey(k){
-  return String(k||"").trim().toLowerCase().replace(/[^a-z0-9]/g,"");
+function useCfg(currentUser){
+  const [cfg,setCfg]=useState({symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES});
+  useEffect(()=>{
+    if(!currentUser) return;
+    const docRef = db.doc(`users/${currentUser.uid}/data`);
+    const unsubscribe = docRef.onSnapshot(doc=>{
+      setCfg(doc.data()?.cfg || {symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES});
+    });
+    return unsubscribe;
+  },[currentUser]);
+  useEffect(()=>{
+    if(!currentUser) return;
+    db.doc(`users/${currentUser.uid}/data`).update({cfg}).catch(e=>console.error("Update cfg error:",e));
+  },[cfg,currentUser]);
+  return [cfg,setCfg];
 }
-const FIELD_ALIASES = {
-  date:      ["date","tradedate","datetime","time"],
-  symbol:    ["symbol","pair","instrument","market","ticker"],
-  side:      ["side","action","direction","position","type"],
-  lotsize:   ["lotsize","lot","volume","qty","quantity","size","lotqty","position_size"],
-  entry:     ["entry","entryprice","pricein","open","openprice","buyprice","sellprice","entryrate"],
-  exit:      ["exit","exitprice","priceout","close","closeprice","exitrate"],
-  tp1:       ["tp1","tp01","tp_1","takeprofit1","takeprofit","tp"],
-  tp2:       ["tp2","tp02","tp_2","takeprofit2"],
-  sl:        ["sl","stop","stoploss","stoplossprice","stoplevel"],
-  strategy:  ["strategy","setup","playbook"],
-  exittype:  ["exittype","exitstatus","closetype","closuretype","outcome"]
-};
-function getFirst(normRow, candidates){
-  for(const c of candidates){
-    if(c in normRow){
-      const v = normRow[c];
-      if(v!=="" && v!==null && v!==undefined) return v;
-    }
-  }
-  return undefined;
-}
-function excelSerialToISO(n){
-  // Excel serial date: days since 1899-12-30
-  const ms = (n - 25569) * 86400 * 1000;
-  const d = new Date(ms);
-  const tz = d.getTimezoneOffset()*60000;
-  return new Date(ms - tz).toISOString().slice(0,10);
-}
-function coerceISODate(v){
-  if(v===undefined || v===null || v==="") return todayISO();
-  if(typeof v==="number" && isFinite(v)) return excelSerialToISO(v);
-  if(v instanceof Date && !isNaN(v)) return new Date(v.getTime()-v.getTimezoneOffset()*60000).toISOString().slice(0,10);
-  const s=String(v).trim();
-  const tryD=new Date(s);
-  if(!isNaN(tryD)) return new Date(tryD.getTime()-tryD.getTimezoneOffset()*60000).toISOString().slice(0,10);
-  return todayISO();
-}
-function toNumberMaybe(v){
-  if(v===undefined||v===null||v==="") return undefined;
-  if(typeof v==="number") return v;
-  const s=String(v).replace(/,/g,"").trim();
-  const n=parseFloat(s);
-  return isNaN(n)?undefined:n;
-}
-
 function App(){
-  const [currentEmail,setCurrentEmail]=useState(getCurrent());
-  const [users,setUsers]=useState(loadUsers());
-  const [state,setState]=usePersisted(currentEmail);
-  const [cfg,setCfg]=useState(()=>loadCfg(currentEmail)||{symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES});
-  useEffect(()=>{if(state?.email) saveCfg(state.email,cfg)},[cfg,state?.email]);
+  const [currentUser,setCurrentUser]=useState(null);
+  const [loading,setLoading]=useState(true);
+  const [state,setState]=usePersisted(currentUser);
+  const [cfg,setCfg]=useCfg(currentUser);
   const [page,setPage]=useState("dashboard");
   const [showTrade,setShowTrade]=useState(false); const [editItem,setEditItem]=useState(null);
   const [showAcct,setShowAcct]=useState(false);
   const [showCal,setShowCal]=useState(false); const now=new Date(); const [calView,setCalView]=useState("month"); const [calMonth,setCalMonth]=useState(now.getMonth()); const [calYear,setCalYear]=useState(now.getFullYear()); const [calSel,setCalSel]=useState(todayISO());
   const [collapsed,setCollapsed]=useState(false);
-  const [showReset,setShowReset]=useState(false); const [resetToken,setResetToken]=useState("");
-
-  useEffect(()=>{const hash=new URLSearchParams(location.hash.slice(1));const tok=hash.get("reset"); if(tok){setResetToken(tok)}},[]);
-  useEffect(()=>{if(state&&(!state.name||!state.depositDate)) setShowAcct(true)},[state?.email]);
-  useEffect(()=>{if(typeof emailjs !== 'undefined'){emailjs.init({publicKey: "qQucnU6BE7h1zb5Ex"});}},[]);
-
+  const [showReset,setShowReset]=useState(false);
+  useEffect(()=>{
+    const unsubscribe=auth.onAuthStateChanged(async(user)=>{
+      setCurrentUser(user);
+      if(user){
+        const uid=user.uid;
+        const docRef=db.doc(`users/${uid}/data`);
+        const doc=await docRef.get();
+        if(!doc.exists){
+          // Migrate legacy local data if exists
+          const legacyEmail = getCurrent() || user.email;
+          const localS=loadState(legacyEmail);
+          if(localS){
+            console.log("Migrating historic data to Firebase...");
+            await docRef.set({
+              state: localS,
+              cfg: loadCfg(legacyEmail) || {symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES},
+              notes: JSON.parse(localStorage.getItem("ng_notes")||"[]")
+            });
+            // Clear legacy localStorage
+            localStorage.clear();
+          } else {
+            // New user, set defaults
+            await docRef.set({
+              state: fresh(user.email),
+              cfg: {symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES},
+              notes: []
+            });
+          }
+        }
+      }
+      setLoading(false);
+    });
+    return unsubscribe;
+  },[]);
+  useEffect(()=>{if(state&&(!state.name||!state.depositDate)) setShowAcct(true)},[state]);
   const onExport=()=>{const csv=toCSV(state.trades,state.accType);const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="Nitty_Gritty_Template_Export.csv";a.click();URL.revokeObjectURL(url)};
-
   /* ---- Import (robust): ALWAYS SheetJS, tolerant header mapping ---- */
   const __importEl = (window.__ngImportEl ||= (() => {
     const el = document.createElement('input');
@@ -794,7 +776,6 @@ function App(){
     return el;
   })());
   function openImportDialog(){ __importEl.value = ''; __importEl.click(); }
-
   function rowsToTrades(rows){
     const out = [];
     for(const r of rows){
@@ -806,33 +787,31 @@ function App(){
       // Map values using aliases
       const t = {};
       t.id = Math.random().toString(36).slice(2);
-      t.date     = coerceISODate( getFirst(norm, FIELD_ALIASES.date) );
-      t.symbol   = String( getFirst(norm, FIELD_ALIASES.symbol) || "" ).toUpperCase();
+      t.date = coerceISODate( getFirst(norm, FIELD_ALIASES.date) );
+      t.symbol = String( getFirst(norm, FIELD_ALIASES.symbol) || "" ).toUpperCase();
       const rawSide = String( getFirst(norm, FIELD_ALIASES.side) || "BUY" ).toUpperCase();
-      t.side     = rawSide.includes("SELL") ? "SELL" : "BUY";
-      t.lotSize  = toNumberMaybe( getFirst(norm, FIELD_ALIASES.lotsize) ) ?? 0.01;
-      t.entry    = toNumberMaybe( getFirst(norm, FIELD_ALIASES.entry) );
-      t.exit     = toNumberMaybe( getFirst(norm, FIELD_ALIASES.exit) );
-      t.tp1      = toNumberMaybe( getFirst(norm, FIELD_ALIASES.tp1) );
-      t.tp2      = toNumberMaybe( getFirst(norm, FIELD_ALIASES.tp2) );
-      t.sl       = toNumberMaybe( getFirst(norm, FIELD_ALIASES.sl) );
+      t.side = rawSide.includes("SELL") ? "SELL" : "BUY";
+      t.lotSize = toNumberMaybe( getFirst(norm, FIELD_ALIASES.lotsize) ) ?? 0.01;
+      t.entry = toNumberMaybe( getFirst(norm, FIELD_ALIASES.entry) );
+      t.exit = toNumberMaybe( getFirst(norm, FIELD_ALIASES.exit) );
+      t.tp1 = toNumberMaybe( getFirst(norm, FIELD_ALIASES.tp1) );
+      t.tp2 = toNumberMaybe( getFirst(norm, FIELD_ALIASES.tp2) );
+      t.sl = toNumberMaybe( getFirst(norm, FIELD_ALIASES.sl) );
       t.strategy = String( getFirst(norm, FIELD_ALIASES.strategy) || DEFAULT_STRATEGIES[0].name );
       t.exitType = String( getFirst(norm, FIELD_ALIASES.exittype) || "Trade In Progress" );
-
       // Skip totally empty rows (no symbol, no numbers)
       const hasAny = t.symbol || t.entry!==undefined || t.exit!==undefined || t.tp1!==undefined || t.tp2!==undefined || t.sl!==undefined;
       if(hasAny) out.push(t);
     }
     return out;
   }
-
   if (!__importEl.__ngBound){
     __importEl.addEventListener('change', async (e)=>{
       const f = e.target.files?.[0]; if(!f) return;
       try{
         const buf = await f.arrayBuffer();
-        const wb  = XLSX.read(buf, { type:'array' });
-        const ws  = wb.Sheets[wb.SheetNames[0]];
+        const wb = XLSX.read(buf, { type:'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(ws, { defval:'', raw:true, blankrows:false });
         const trades = rowsToTrades(rows);
         setState(s => ({ ...s, trades: [...trades.reverse(), ...s.trades] })); // keep existing order as before
@@ -843,25 +822,7 @@ function App(){
     });
     __importEl.__ngBound = true;
   }
-
-  const onLogout=()=>{saveCurrent("");setCurrentEmail("")};
-  const initGoogle=(container,onEmail)=>{
-    const clientId=window.GOOGLE_CLIENT_ID;
-    if(!window.google||!clientId||!container) return;
-    window.google.accounts.id.initialize({client_id:clientId,callback:(resp)=>{const p=parseJwt(resp.credential); if(p&&p.email){onEmail(p.email)}}});
-    window.google.accounts.id.renderButton(container,{theme:"outline",size:"large",text:"signin_with",shape:"pill"});
-  };
-  const login=(email,password,setErr)=>{const u=users.find(x=>x.email.toLowerCase()===email.toLowerCase());
-    if(!u){ if(password==="__google__"){const nu=[...users,{name:email.split("@")[0],email,password:""}]; setUsers(nu); saveUsers(nu); const fresh={name:email.split("@")[0],email,accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[]}; saveState(email,fresh); saveCurrent(email); setCurrentEmail(email); setCfg({symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES}); return;}
-      setErr("No such user. Please sign up."); return;}
-    if(password!=="__google__" && u.password!==password){setErr("Wrong password.");return}
-    setErr(""); saveCurrent(u.email); setCurrentEmail(u.email); setCfg(loadCfg(u.email)||{symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES});
-  };
-  const signup=(name,email,password,setErr)=>{if(users.some(x=>x.email.toLowerCase()===email.toLowerCase())){setErr("Email already registered.");return}
-    const u={name,email,password}; const nu=[...users,u]; setUsers(nu); saveUsers(nu);
-    const fresh={name,email,accType:ACC_TYPES[1],capital:0,depositDate:todayISO(),trades:[]}; saveState(email,fresh); saveCurrent(email); setCurrentEmail(email);
-    setCfg({symbols:DEFAULT_SYMBOLS,strategies:DEFAULT_STRATEGIES});
-  };
+  const onLogout=()=>{auth.signOut()};
   const resetStart=()=>{setShowReset(true)};
   const addOrUpdate=(draft)=>{const id=draft.id||Math.random().toString(36).slice(2); const arr=state.trades.slice(); const idx=arr.findIndex(t=>t.id===id); const rec={...draft,id}; if(idx>=0)arr[idx]=rec; else arr.unshift(rec); setState({...state,trades:arr}); setShowTrade(false); setEditItem(null)};
   const delTrade=(id)=>setState({...state,trades:state.trades.filter(t=>t.id!==id)});
@@ -869,10 +830,8 @@ function App(){
   const openTrades=state.trades.filter(t=> !t.exitType || t.exitType === "Trade In Progress").length;
   const realized=state.trades.filter(t=>new Date(t.date)>=new Date(state.depositDate)&&t.exitType && t.exitType !== "Trade In Progress").map(t=>computeDollarPnL(t,state.accType)).filter(v=>v!==null&&isFinite(v)).reduce((a,b)=>a+b,0);
   const effectiveCapital=state.capital+realized;
-
-  if(resetToken){return <NewPasswordModal token={resetToken} onClose={()=>{setResetToken(""); location.hash=""}}/>}
-  if(!currentEmail){return <><LoginView onLogin={login} onSignup={signup} initGoogle={initGoogle} resetStart={resetStart}/>{showReset&&<ResetModal email="" onClose={()=>setShowReset(false)}/>}</>}
-
+  if(loading) return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+  if(!currentUser) return <><LoginView resetStart={resetStart}/>{showReset&&<ResetModal email="" onClose={()=>setShowReset(false)}/>}</>;
   const navBtn=(label,pageKey,Icon)=>(<button onClick={()=>setPage(pageKey)} className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border ${page===pageKey?'bg-slate-700 border-slate-600':'border-slate-700 hover:bg-slate-800'}`}>{Icon?<Icon/>:null}<span>{label}</span></button>);
   const capitalPanel=(<div>
     <div className="text-sm text-slate-300">Account Type</div><div className="font-semibold mb-3">{state.accType}</div>
@@ -888,7 +847,6 @@ function App(){
     {navBtn("Notes","notes",IconNote)}
     {navBtn("Settings","settings",IconSettings)}
   </>);
-
   const logoSrc=LOGO_PUBLIC;
   return(
     <AppShell capitalPanel={capitalPanel} nav={nav} logoSrc={logoSrc}
@@ -900,14 +858,14 @@ function App(){
         <BestStrategy trades={state.trades} accType={state.accType} strategies={cfg.strategies}/>
       </div>)}
       {page==="histories"&&(<Histories trades={state.trades} accType={state.accType} onEdit={t=>{setEditItem(t);setShowTrade(true)}} onDelete={delTrade} strategies={cfg.strategies} onClearAll={clearAllTrades}/>)}
-      {page==="notes"&&(<NotesPanel trades={state.trades}/>)}
+      {page==="notes"&&(<NotesPanel trades={state.trades} currentUser={currentUser}/>)}
       {page==="settings"&&(<SettingsPanel
         name={state.name} setName={v=>setState({...state,name:v})}
         accType={state.accType} setAccType={v=>setState({...state,accType:v})}
         capital={state.capital} setCapital={v=>setState({...state,capital:v||0})}
         depositDate={state.depositDate} setDepositDate={v=>setState({...state,depositDate:v})}
         email={state.email}
-        cfg={cfg} setCfg={(n)=>{setCfg(n); saveCfg(state.email,n)}}
+        cfg={cfg} setCfg={(n)=>{setCfg(n)}}
       />)}
       {showTrade&&(<TradeModal initial={editItem} onClose={()=>{setShowTrade(false);setEditItem(null)}} onSave={addOrUpdate} onDelete={delTrade} accType={state.accType} symbols={cfg.symbols} strategies={cfg.strategies}/>)}
       {showAcct&&(<AccountSetupModal name={state.name} setName={v=>setState({...state,name:v})} accType={state.accType} setAccType={v=>setState({...state,accType:v})} capital={state.capital} setCapital={v=>setState({...state,capital:v||0})} depositDate={state.depositDate} setDepositDate={v=>setState({...state,depositDate:v})} onClose={()=>setShowAcct(false)} email={state.email}/>)}
@@ -916,6 +874,5 @@ function App(){
     </AppShell>
   )
 }
-
 /* -------- Mount -------- */
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
