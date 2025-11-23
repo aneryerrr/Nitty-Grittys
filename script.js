@@ -542,20 +542,20 @@ function NoteModal({onClose,onSave,initial,trades}){
         </div>
         <div className="space-y-3">
           <div><label className="text-sm text-slate-300">Date</label><input type="date" value={date} onChange={e=>setDate(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
-          <div>
-            <label className="text-sm text-slate-300">Reference Trade (today)</label>
-            <div className="mt-1 space-y-2 max-h-[140px] overflow-auto">
-              {todaysTrades.map(t=>(
-                <label key={t.id} className="flex items-center gap-2 text-sm">
-                  <input type="radio" name="ref" checked={refId===t.id} onChange={()=>setRefId(t.id)} />
-                  <span>{t.symbol} · {t.side} · Lot {t.lotSize}</span>
-                </label>
-              ))}
-              {todaysTrades.length===0 && <div className="text-xs text-slate-400">No trades for selected date.</div>}
+            <div>
+              <label className="text-sm text-slate-300">Reference Trade (today)</label>
+              <div className="mt-1 space-y-2 max-h-[140px] overflow-auto">
+                {todaysTrades.map(t=>(
+                  <label key={t.id} className="flex items-center gap-2 text-sm">
+                    <input type="radio" name="ref" checked={refId===t.id} onChange={()=>setRefId(t.id)} />
+                    <span>{t.symbol} · {t.side} · Lot {t.lotSize}</span>
+                  </label>
+                ))}
+                {todaysTrades.length===0 && <div className="text-xs text-slate-400">No trades for selected date.</div>}
+              </div>
             </div>
           </div>
         </div>
-      </div>
       <div className="mt-4 flex items-center justify-end gap-2">
         <button onClick={onClose} className="px-4 py-2 rounded-lg border border-slate-600 hover:bg-slate-700 whitespace-nowrap">Discard</button>
         <button onClick={save} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 flex items-center gap-2 whitespace-nowrap"><IconSave/>Save</button>
@@ -620,7 +620,7 @@ function LoginView({resetStart}){
   const [email,setEmail]=useState(""); const [password,setPassword]=useState(""); const [showPw,setShowPw]=useState(false);
   const [name,setName]=useState(""); const [confirm,setConfirm]=useState(""); const [err,setErr]=useState("");
   const googleDiv=useRef(null);
-  useEffect(()=>{initGoogle(googleDiv.current,(resp)=>{const p=parseJwt(resp.credential);if(p&&p.email){const credential=GoogleAuthProvider.credential(null, resp.credential);signInWithCredential(auth,credential).catch(e=>setErr(e.message));}})},[]);
+  useEffect(()=>{initGoogle(googleDiv.current,(resp)=>{const p=parseJwt(resp.credential);if(p&&p.email){const credential=GoogleAuthProvider.credential(resp.credential);signInWithCredential(auth,credential).catch(e=>setErr(e.message));}})},[]);
   const submit=async()=>{setErr(""); if(mode==="login"){if(!email||!password)return setErr("Fill all fields.");
     try{await signInWithEmailAndPassword(auth, email,password)}catch(error){if(error.code==='auth/user-not-found'){try{await createUserWithEmailAndPassword(auth, email,password)}catch(e){setErr(e.message);return}}else{setErr(error.message);return}}}
     else{if(!name||!email||!password||!confirm)return setErr("Fill all fields."); if(password!==confirm)return setErr("Passwords do not match.");
