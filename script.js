@@ -209,7 +209,7 @@ function SettingsPanel({name,setName,accType,setAccType,capital,setCapital,depos
             <div className="font-semibold mb-2">Symbols</div>
             <div className="flex gap-2 mb-2">
               <input value={symText} onChange={e=>setSymText(e.target.value.toUpperCase())} placeholder="e.g., XAUUSD" className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/>
-              <button onClick={()=>{if(symText && !(cfg?.symbols || []).includes(symText)){const n={... (cfg || {}),symbols:[...(cfg?.symbols || []),symText]};setCfg(n);}}} className="px-3 py-2 rounded-lg border border-slate-700">Add</button>
+            <button onClick={()=>{if(symText && !(cfg?.symbols || []).includes(symText)){const n={... (cfg || {}),symbols:[...(cfg?.symbols || []),symText]};setCfg(n);}}} className="px-3 py-2 rounded-lg border border-slate-700">Add</button>
             </div>
             <div className="flex flex-wrap gap-2">{(cfg?.symbols || []).map(s=>(<span key={s} className="px-2 py-1 rounded-lg border border-slate-700">{s} <button onClick={()=>{const n={... (cfg || {}),symbols:(cfg?.symbols || []).filter(x=>x!==s)};setCfg(n)}} className="ml-1 text-red-300">×</button></span>))}</div>
           </div>
@@ -542,20 +542,20 @@ function NoteModal({onClose,onSave,initial,trades}){
         </div>
         <div className="space-y-3">
           <div><label className="text-sm text-slate-300">Date</label><input type="date" value={date} onChange={e=>setDate(e.target.value)} className="w-full mt-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2"/></div>
-            <div>
-              <label className="text-sm text-slate-300">Reference Trade (today)</label>
-              <div className="mt-1 space-y-2 max-h-[140px] overflow-auto">
-                {todaysTrades.map(t=>(
-                  <label key={t.id} className="flex items-center gap-2 text-sm">
-                    <input type="radio" name="ref" checked={refId===t.id} onChange={()=>setRefId(t.id)} />
-                    <span>{t.symbol} · {t.side} · Lot {t.lotSize}</span>
-                  </label>
-                ))}
-                {todaysTrades.length===0 && <div className="text-xs text-slate-400">No trades for selected date.</div>}
-              </div>
+          <div>
+            <label className="text-sm text-slate-300">Reference Trade (today)</label>
+            <div className="mt-1 space-y-2 max-h-[140px] overflow-auto">
+              {todaysTrades.map(t=>(
+                <label key={t.id} className="flex items-center gap-2 text-sm">
+                  <input type="radio" name="ref" checked={refId===t.id} onChange={()=>setRefId(t.id)} />
+                  <span>{t.symbol} · {t.side} · Lot {t.lotSize}</span>
+                </label>
+              ))}
+              {todaysTrades.length===0 && <div className="text-xs text-slate-400">No trades for selected date.</div>}
             </div>
           </div>
         </div>
+      </div>
       <div className="mt-4 flex items-center justify-end gap-2">
         <button onClick={onClose} className="px-4 py-2 rounded-lg border border-slate-600 hover:bg-slate-700 whitespace-nowrap">Discard</button>
         <button onClick={save} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 flex items-center gap-2 whitespace-nowrap"><IconSave/>Save</button>
@@ -721,6 +721,7 @@ function App(){
   const [showCal,setShowCal]=useState(false); const now=new Date(); const [calView,setCalView]=useState("month"); const [calMonth,setCalMonth]=useState(now.getMonth()); const [calYear,setCalYear]=useState(now.getFullYear()); const [calSel,setCalSel]=useState(todayISO());
   const [collapsed,setCollapsed]=useState(false);
   const [showReset,setShowReset]=useState(false);
+  const [backingUp,setBackingUp]=useState(false);
   useEffect(()=>{
     const unsubscribe=onAuthStateChanged(auth, async(user)=>{
       setCurrentUser(user);
@@ -729,6 +730,7 @@ function App(){
         const docRef=doc(db, `users/${uid}`);
         const snap=await getDoc(docRef);
         if(!snap.exists()){
+          setBackingUp(true);
           // Migrate legacy local data if exists
           const legacyEmail = getCurrent() || user.email;
           const localS=loadState(legacyEmail);
@@ -749,6 +751,7 @@ function App(){
               notes: []
             });
           }
+          setBackingUp(false);
         }
       }
       setLoading(false);
@@ -861,7 +864,14 @@ function App(){
     });
     __importEl.__ngBound = true;
   }
-  const onLogout=()=>{signOut(auth)};
+  const onLogout=async()=>{
+    setBackingUp(true);
+    try {
+      await signOut(auth);
+    } finally {
+      setBackingUp(false);
+    }
+  };
   const resetStart=()=>{setShowReset(true)};
   const addOrUpdate=(draft)=>{const id=draft.id||Math.random().toString(36).slice(2); const arr=(state.trades || []).slice(); const idx=arr.findIndex(t=>t.id===id); const rec={...draft,id}; if(idx>=0)arr[idx]=rec; else arr.unshift(rec); setState({...state,trades:arr}); setShowTrade(false); setEditItem(null)};
   const delTrade=(id)=>setState({...state,trades:(state.trades || []).filter(t=>t.id!==id)});
@@ -871,6 +881,7 @@ function App(){
   const effectiveCapital=state.capital+realized;
   if(loading) return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   if(!currentUser) return <><LoginView resetStart={resetStart}/>{showReset&&<ResetModal email="" onClose={()=>setShowReset(false)}/>}</>;
+  if(backingUp) return <div className="flex items-center justify-center min-h-screen text-white">Backing up data, please wait...</div>;
   const navBtn=(label,pageKey,Icon)=>(<button onClick={()=>setPage(pageKey)} className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border ${page===pageKey?'bg-slate-700 border-slate-600':'border-slate-700 hover:bg-slate-800'}`}>{Icon?<Icon/>:null}<span>{label}</span></button>);
   const capitalPanel=(<div>
     <div className="text-sm text-slate-300">Account Type</div><div className="font-semibold mb-3">{state.accType}</div>
